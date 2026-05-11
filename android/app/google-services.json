@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "444809315464",
+    "project_id": "ridercaptainapp",
+    "storage_bucket": "ridercaptainapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:444809315464:android:3e78c09b9bf03795670b3d",
+        "android_client_info": {
+          "package_name": "com.traveladmin"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB20h75VKS2PAX_j3O62jK0Y6sJIAIrTbI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
