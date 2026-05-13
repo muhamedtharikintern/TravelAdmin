@@ -59,7 +59,7 @@ router.get(
 
       // FIND PENDING ORDERS
       const orders =
-        await Order.find({
+        await order.find({
           status: "pending",
         }).sort({
           createdAt: -1,
