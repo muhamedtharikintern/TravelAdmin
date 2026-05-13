@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const userSchema = new mongoose.Schema({
+const captainSchema = new mongoose.Schema({
 
   mobileNo: {
     type: String,
@@ -12,17 +12,12 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-
-  role: {
-    type: String,
-    default: "captain",
-  },
-
-}, {
+},
+ {
   timestamps: true,
 });
 
 export default mongoose.model(
-  "User",
+  "Captain",
   userSchema
 );
