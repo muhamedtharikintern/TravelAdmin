@@ -19,5 +19,5 @@ const captainSchema = new mongoose.Schema({
 
 export default mongoose.model(
   "Captain",
-  userSchema
+  captainSchema
 );
