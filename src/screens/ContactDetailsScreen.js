@@ -78,7 +78,7 @@ const sendOTP = async () => {
         <Text style={styles.countryCode}>+91</Text>
         <TextInput
           style={styles.input}
-          keyboardType="number-pad"
+          keyboardType="default"
           value={phone}
           onChangeText={setPhone}
           placeholder=""
