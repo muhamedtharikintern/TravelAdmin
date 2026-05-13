@@ -20,11 +20,11 @@ router.post(
       } = req.body;
 
       // CHECK MOBILE NUMBER
-      if (!mobileNo) {
+      if (!mobileNo || !name) {
 
         return res.status(400).json({
           success: false,
-          message: "Mobile number required",
+          message: "Mobile number and name are  required",
         });
 
       }
@@ -50,7 +50,7 @@ router.post(
 
         mobileNo,
 
-        name: name || "",
+        name
 
       });
 
