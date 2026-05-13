@@ -16,6 +16,8 @@ const orderSchema = new mongoose.Schema({
 
   dropLocation: String,
 
+  vehicleType : String,
+
   amount: Number,
 
   distance: Number,

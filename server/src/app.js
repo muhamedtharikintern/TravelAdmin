@@ -3,6 +3,7 @@ import cors from "cors";
 import morgan from "morgan";
 
 import authRouter from "./routes/auth.js";
+import orderRouter from "./routes/orders.js"
 
 
 const app = express();
@@ -14,6 +15,7 @@ app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 
 // Routes
 app.use('/auth', authRouter);
+app.use('/order',orderRouter);
 
 export default app;
 

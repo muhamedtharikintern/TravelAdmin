@@ -75,7 +75,7 @@ const sendOTP = async () => {
 
       {/* PHONE INPUT */}
       <View style={styles.inputContainer}>
-        <Text style={styles.countryCode}>+91</Text>
+        {/*<Text style={styles.countryCode}>+91</Text>*/}
         <TextInput
           style={styles.input}
           keyboardType="default"
@@ -179,12 +179,12 @@ const styles = StyleSheet.create({
     height: 60,
   },
 
-  countryCode: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginRight: 10,
-  },
+  // countryCode: {
+  //   fontSize: 18,
+  //   fontWeight: '600',
+  //   color: '#333',
+  //   marginRight: 10,
+  // },
 
   input: {
     flex: 1,
