@@ -12,38 +12,72 @@ import {
 } from 'react-native';
 
 const ContactDetailsScreen = ({ navigation }) => {
-  const [phone, setPhone] = useState('');
+const API_URL = "https://traveladmin.duckdns.org";
+const [phone, setPhone] = useState('');
 
 const sendOTP = async () => {
-
-  try {
-
-    // SEND OTP USING FIREBASE
-    const confirmation =
-    await auth().signInWithPhoneNumber(
-      `+91${phone}`
-    );
-
-    // NAVIGATE TO OTP SCREEN
-    navigation.navigate(
-      'EnterOTP',
-      {
-        confirm:confirmation,
-        //mobileNo: phone,
-      }
-    );
-
-  } catch (error) {
-
-    console.log(error);
-
-    Alert.alert(
-      'Error',
-      error.message
-    );
-
+  if (!phone || phone.length < 10) {
+    Alert.alert('Error', 'Please enter a valid 10-digit mobile number');
+    return;
   }
 
+  try {
+    const mobileNo = `+91${phone}`;
+
+    // 1. CHECK / LOGIN
+    const loginRes = await fetch(`${API_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mobileNo }),
+    });
+
+    // ✅ READ RAW TEXT FIRST TO AVOID JSON PARSE ERROR
+    const loginRaw = await loginRes.text();
+    console.log('LOGIN RAW RESPONSE:', loginRaw);  // 👈 check Metro logs
+
+    let loginData;
+    try {
+      loginData = JSON.parse(loginRaw);
+    } catch (e) {
+      Alert.alert('Server Error', `Login endpoint unreachable.\nStatus: ${loginRes.status}`);
+      return;
+    }
+
+    // 2. IF NOT FOUND → REGISTER
+    if (!loginData.success) {
+      const registerRes = await fetch(`${API_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mobileNo }),
+      });
+
+      const registerRaw = await registerRes.text();
+      console.log('REGISTER RAW RESPONSE:', registerRaw);  // 👈 check Metro logs
+
+      let registerData;
+      try {
+        registerData = JSON.parse(registerRaw);
+      } catch (e) {
+        Alert.alert('Server Error', `Register endpoint unreachable.\nStatus: ${registerRes.status}`);
+        return;
+      }
+
+      if (!registerData.success) {
+        Alert.alert('Error', registerData.message);
+        return;
+      }
+    }
+
+    // 3. SEND OTP VIA FIREBASE
+    const confirmation = await auth().signInWithPhoneNumber(mobileNo);
+
+    // 4. NAVIGATE TO OTP SCREEN
+    navigation.navigate('EnterOTP', { confirm: confirmation });
+
+  } catch (error) {
+    console.log('CATCH ERROR:', error);
+    Alert.alert('Error', error.message);
+  }
 };
 
   return (

@@ -10,10 +10,10 @@ router.post("/register", async (req, res) => {
   try {
     const { mobileNo, name } = req.body;
 
-    if (!mobileNo || !name) {
+    if (!mobileNo) {
       return res.status(400).json({
         success: false,
-        message: "Mobile number and name are required",
+        message: "Mobile number required",
       });
     }
 
