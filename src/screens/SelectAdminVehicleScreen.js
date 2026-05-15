@@ -33,70 +33,32 @@ const SelectadminVehicleScreen = ({ navigation, route}) => {
   const mobileNo = route?.params?.mobileNo;
   const token = route?.params?.token;
 
- const handleConfirm = async () => {
-  const selectedVehicle = VEHICLES.find(
-    v => v.id === selected
-  );
-
-  if (!selectedVehicle) {
-    Alert.alert(
-      'Error',
-      'Please select a vehicle'
-    );
-    return;
-  }
-
+ const handleConfirmCity = async () => {
   try {
-    setLoading(true);
+    const selectedCity = "Chennai";
 
-    const response = await fetch(
-      `${API_URL}/auth/update-vehicle`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          vehicleType:
-            selectedVehicle.title,
-        }),
-      }
-    );
+    console.log("TOKEN BEING SENT:", token); // ADD THIS
 
-    const result =
-      await response.json();
+    const response = await fetch(`${API_URL}/auth/update-city`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ city: selectedCity }),
+    });
 
-    console.log(
-      'Update vehicle response:',
-      result
-    );
+    console.log("RESPONSE STATUS:", response.status); // ADD THIS
+
+    const result = await response.json();
+    console.log("FULL RESULT:", JSON.stringify(result)); // ADD THIS
 
     if (result.success) {
-      navigation.navigate(
-        'RideOrPorter',
-        {
-          vehicleType:
-            selectedVehicle.title,
-        }
-      );
-    } else {
-      Alert.alert(
-        'Error',
-        result.message ||
-          'Failed to update vehicle'
-      );
+      navigation.navigate("SelectadminVehicle", { mobileNo, token });
     }
 
   } catch (error) {
-    console.log('Error:', error);
-
-    Alert.alert(
-      'Error',
-      error.message
-    );
-  } finally {
-    setLoading(false);
+    console.log("ERROR:", error);
   }
 };
 

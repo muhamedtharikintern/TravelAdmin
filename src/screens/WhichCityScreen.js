@@ -45,7 +45,7 @@ const handleConfirmCity = async () => {
       result
     );
 
-    if (response.ok) {
+    if (result.success) {
       navigation.navigate(
         "SelectadminVehicle",
         {
