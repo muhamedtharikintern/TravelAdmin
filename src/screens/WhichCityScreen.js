@@ -49,6 +49,7 @@ const handleConfirmCity = async () => {
       navigation.navigate(
         "SelectadminVehicle",
         {
+          mobileNo,
           token,
         }
       );
