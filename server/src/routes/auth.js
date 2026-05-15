@@ -100,6 +100,43 @@ router.post("/login", async (req, res) => {
   }
 });
 
+router.post(
+  "/update-city",
+  authMiddleware,
+  async (req, res) => {
+    try {
+      const { city } = req.body;
+
+      if (!city) {
+        return res.status(400).json({
+          success: false,
+          message: "City required",
+        });
+      }
+
+      const user = await User.findByIdAndUpdate(
+        req.user._id,
+        { city },
+        { new: true }
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "City updated",
+        user,
+      });
+
+    } catch (error) {
+      console.log(error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Server Error",
+      });
+    }
+  }
+);
+
 
 // ====================== UPDATE VEHICLE ======================
 router.post(

@@ -17,6 +17,11 @@ const captainSchema = new mongoose.Schema({
     default: null,
   },
 
+  City:{
+    type:String,
+    default:null,
+  },
+
   serviceType:{
     type:String,
     default: null,

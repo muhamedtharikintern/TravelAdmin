@@ -10,9 +10,54 @@ import {
 import Icon from 'react-native-vector-icons/Feather';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
+const API_URL ="https://traveladmin.duckdns.org";
+
 const WhichCityScreen = ({ navigation, route }) => {
   const mobileNo = route?.params?.mobileNo;  
   const token = route?.params?.token;
+
+
+
+const handleConfirmCity = async () => {
+  try {
+    const selectedCity = "Chennai";
+
+    const response = await fetch(
+      `${API_URL}/auth/update-city`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type":
+            "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          city: selectedCity,
+        }),
+      }
+    );
+
+    const result =
+      await response.json();
+
+    console.log(
+      "City update:",
+      result
+    );
+
+    if (result.success) {
+      navigation.navigate(
+        "SelectadminVehicle",
+        {
+          token,
+        }
+      );
+    }
+
+  } catch (error) {
+    console.log(error);
+  }
+};
   return (
     <SafeAreaView style={styles.container}>
 
@@ -60,10 +105,7 @@ const WhichCityScreen = ({ navigation, route }) => {
 
       {/* CTA BUTTON */}
       <TouchableOpacity style={styles.button}
-      onPress={() => navigation.navigate('SelectadminVehicle', {
-          mobileNo: mobileNo,  // ✅ pass forward
-          token: token,
-         })}>
+      onPress={handleConfirmCity}>
         <Text style={styles.buttonText}>Confirm City</Text>
       </TouchableOpacity>
 
