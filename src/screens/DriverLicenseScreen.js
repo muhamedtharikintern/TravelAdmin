@@ -108,7 +108,7 @@ const DriverLicenseScreen = ({ navigation, route }) => {
       setUploadingBack(false);
 
       // ✅ Save to MongoDB - matching your schema fields exactly
-      const response = await fetch(`${API_URL}/captain/upload-license`, {
+      const response = await fetch(`${API_URL}/auth/upload-license`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

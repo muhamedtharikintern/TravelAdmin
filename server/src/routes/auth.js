@@ -94,31 +94,43 @@ router.post("/login", async (req, res) => {
 });
 
 // UPDATE VEHICLE TYPE
-// UPDATE VEHICLE TYPE
-router.post("/update-vehicle", authMiddleware, async (req, res) => {
+router.post("/update-vehicle", async (req, res) => {
   try {
-    const { vehicleType } = req.body;
+    const { mobileNo, vehicleType } = req.body;
 
-    if (!vehicleType) {
-      return res.status(400).json({ success: false, message: "vehicleType required" });
+    if (!mobileNo || !vehicleType) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "mobileNo and vehicleType required" 
+      });
     }
 
-    // ✅ USE userId FROM TOKEN (set by authMiddleware)
-    const user = await User.findByIdAndUpdate(
-      req.userId,
+    // ✅ FIND BY mobileNo AND UPDATE vehicleType
+    const user = await User.findOneAndUpdate(
+      { mobileNo },
       { vehicleType },
       { new: true }
     );
 
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res.status(404).json({ 
+        success: false, 
+        message: "User not found" 
+      });
     }
 
-    return res.status(200).json({ success: true, message: "Vehicle updated", user });
+    return res.status(200).json({ 
+      success: true, 
+      message: "Vehicle updated", 
+      user 
+    });
 
   } catch (error) {
     console.log(error);
-    return res.status(500).json({ success: false, message: "Server Error" });
+    return res.status(500).json({ 
+      success: false, 
+      message: "Server Error" 
+    });
   }
 });
 
