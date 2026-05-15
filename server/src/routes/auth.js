@@ -114,11 +114,19 @@ router.post(
         });
       }
 
-      const user = await User.findByIdAndUpdate(
-        req.user._id,
-        { city },
-        { new: true }
-      );
+      const user =
+        await User.findByIdAndUpdate(
+          req.userId, // ✅ use this
+          { city },
+          { new: true }
+        );
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found",
+        });
+      }
 
       return res.status(200).json({
         success: true,
@@ -154,7 +162,7 @@ router.post(
       }
 
       const user = await User.findByIdAndUpdate(
-        req.user._id,
+        req.userId,
         { vehicleType },
         { new: true }
       );
