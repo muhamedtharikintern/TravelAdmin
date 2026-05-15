@@ -28,8 +28,8 @@ const sendOTP = async () => {
     navigation.navigate(
       'EnterOTP',
       {
-        confirmation,
-        mobileNo: phone,
+        confirm:confirmation,
+        //mobileNo: phone,
       }
     );
 

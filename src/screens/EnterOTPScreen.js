@@ -7,13 +7,102 @@ import {
   SafeAreaView,
   TextInput,
   Image,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/Feather';
 
-const EnterOTPScreen = ({ navigation }) => {
-  const [otp, setOtp] = useState(['', '', '', '', '']);
+
+const EnterOTPScreen = ({ navigation, route }) => {
+  const API_URL ="https://traveladmin.duckdns.org";
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const inputs = useRef([]);
+  const confirm = route?.params?.confirm;
+  const mobileNo = route?.params?.mobileNo; // ✅ get mobileNo from previous screen
+
+  const verifyOTP = async (otpCode) => {
+    if (!confirm) {
+      setError('Session expired. Please go back and try again.');
+      return;
+    }
+    try {
+      setLoading(true);
+      setError('');
+
+      // ✅ Step 1: Verify OTP with Firebase
+      await confirm.confirm(otpCode);
+      console.log('OTP verified successfully');
+
+      // ✅ Step 2: Check if user exists in MongoDB
+      await registerOrLoginUser();
+
+    } catch (err) {
+      console.log('OTP Error:', err);
+      setError('Invalid OTP. Please try again.');
+      setOtp(['', '', '', '', '', '']);
+      inputs.current[0].focus();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ Register or Login user in MongoDB
+  const registerOrLoginUser = async () => {
+    try {
+      // First try to login
+      const loginResponse = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mobileNo: mobileNo }),
+      });
+
+      const loginResult = await loginResponse.json();
+      console.log('Login result:', loginResult);
+
+      if (loginResult.success) {
+        // ✅ Existing user - go to home
+        console.log('Existing user logged in');
+        navigation.navigate('Whichcity', {
+          mobileNo: mobileNo,
+          token: loginResult.token,
+          user: loginResult.user,
+        });
+
+      } else {
+        // ✅ New user - register them
+        const registerResponse = await fetch(`${API_URL}/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mobileNo: mobileNo,
+            name: 'Captain',        // ← update this if you collect name earlier
+            vehicleType: 'unknown', // ← update later in profile screen
+            serviceType: 'unknown', // ← update later in profile screen
+          }),
+        });
+
+        const registerResult = await registerResponse.json();
+        console.log('Register result:', registerResult);
+
+        if (registerResult.success) {
+          console.log('New user registered');
+          navigation.navigate('Whichcity', {
+            mobileNo: mobileNo,
+            token: registerResult.token,
+            user: registerResult.user,
+          });
+        } else {
+          Alert.alert('Error', registerResult.message || 'Registration failed');
+        }
+      }
+
+    } catch (error) {
+      console.log('API Error:', error);
+      Alert.alert('Error', 'Failed to connect to server. Please try again.');
+    }
+  };
 
   const handleChange = (text, index) => {
     if (text.length > 1) return;
@@ -22,8 +111,13 @@ const EnterOTPScreen = ({ navigation }) => {
     newOtp[index] = text;
     setOtp(newOtp);
 
-    if (text && index < 4) {
+    if (text && index < 5) {
       inputs.current[index + 1].focus();
+    }
+
+    if (index === 5 && text) {
+      const otpCode = newOtp.join('');
+      verifyOTP(otpCode);
     }
   };
 
@@ -38,16 +132,16 @@ const EnterOTPScreen = ({ navigation }) => {
 
       {/* BACK BUTTON */}
       <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Image
-            source={require('../assets/back.png')} 
-            style={styles.backIcon}
-          />
+        <Image
+          source={require('../assets/back.png')}
+          style={styles.backIcon}
+        />
       </TouchableOpacity>
 
       {/* IMAGE */}
       <View style={styles.imageContainer}>
         <Image
-          source={require('../assets/phone.png')} // replace with your asset
+          source={require('../assets/phone.png')}
           style={styles.image}
           resizeMode="contain"
         />
@@ -62,10 +156,14 @@ const EnterOTPScreen = ({ navigation }) => {
           <TextInput
             key={index}
             ref={(ref) => (inputs.current[index] = ref)}
-            style={styles.otpBox}
+            style={[
+              styles.otpBox,
+              digit ? styles.otpBoxFilled : null,
+            ]}
             keyboardType="number-pad"
             maxLength={1}
             value={digit}
+            editable={!loading}
             onChangeText={(text) => handleChange(text, index)}
             onKeyPress={({ nativeEvent }) =>
               handleBackspace(nativeEvent.key, index)
@@ -73,6 +171,14 @@ const EnterOTPScreen = ({ navigation }) => {
           />
         ))}
       </View>
+
+      {/* ERROR MESSAGE */}
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+      {/* LOADING */}
+      {loading && (
+        <ActivityIndicator style={styles.loader} size="large" color="#1A6B4A" />
+      )}
 
     </SafeAreaView>
   );
@@ -87,11 +193,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   backIcon: {
-  width: 40,
-  height: 40,
-  resizeMode: 'contain',
-},
-  /* BACK */
+    width: 40,
+    height: 40,
+    resizeMode: 'contain',
+  },
   backBtn: {
     marginTop: 20,
     width: 42,
@@ -101,33 +206,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-
-  /* IMAGE */
   imageContainer: {
     marginTop: 60,
     alignItems: 'center',
   },
-
   image: {
     width: 120,
     height: 120,
   },
-
-  /* TITLE */
   title: {
     marginTop: 40,
     fontSize: 22,
     fontWeight: '600',
     color: '#333',
+    textAlign: 'center',
   },
-
-  /* OTP BOXES */
   otpContainer: {
     marginTop: 25,
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-
   otpBox: {
     width: 55,
     height: 65,
@@ -138,5 +236,18 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: '#333',
     backgroundColor: '#FFF',
+  },
+  otpBoxFilled: {
+    borderColor: '#1A6B4A',
+    borderWidth: 2,
+  },
+  errorText: {
+    color: 'red',
+    marginTop: 15,
+    fontSize: 13,
+    textAlign: 'center',
+  },
+  loader: {
+    marginTop: 30,
   },
 });

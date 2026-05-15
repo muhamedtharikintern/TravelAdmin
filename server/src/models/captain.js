@@ -7,6 +7,31 @@ const captainSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
+  vehicleType:{
+    type:String,
+    required: true,
+  },
+
+  serviceType:{
+    type:String,
+    required: true,
+  },
+
+  drivingLicenceFront:{
+    type: String,
+    default: null,
+
+  },
+
+  drivingLicenceBack:{
+    type: String,
+    default: null,
+
+  },
+
+  drivingLicenceNo:{
+    type:String
+  },
 
   name:{
     type: String,
