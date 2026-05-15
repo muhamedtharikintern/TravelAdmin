@@ -33,32 +33,70 @@ const SelectadminVehicleScreen = ({ navigation, route}) => {
   const mobileNo = route?.params?.mobileNo;
   const token = route?.params?.token;
 
- const handleConfirmCity = async () => {
+ const handleConfirm = async () => {
+  const selectedVehicle = VEHICLES.find(
+    v => v.id === selected
+  );
+
+  if (!selectedVehicle) {
+    Alert.alert(
+      'Error',
+      'Please select a vehicle'
+    );
+    return;
+  }
+
   try {
-    const selectedCity = "Chennai";
+    setLoading(true);
 
-    console.log("TOKEN BEING SENT:", token); // ADD THIS
+    const response = await fetch(
+      `${API_URL}/auth/update-vehicle`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          vehicleType:
+            selectedVehicle.title,
+        }),
+      }
+    );
 
-    const response = await fetch(`${API_URL}/auth/update-city`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ city: selectedCity }),
-    });
+    const result =
+      await response.json();
 
-    console.log("RESPONSE STATUS:", response.status); // ADD THIS
-
-    const result = await response.json();
-    console.log("FULL RESULT:", JSON.stringify(result)); // ADD THIS
+    console.log(
+      'Update vehicle response:',
+      result
+    );
 
     if (result.success) {
-      navigation.navigate("SelectadminVehicle", { mobileNo, token });
+      navigation.navigate(
+        'RideOrPorter',
+        {
+          vehicleType:
+            selectedVehicle.title,
+        }
+      );
+    } else {
+      Alert.alert(
+        'Error',
+        result.message ||
+          'Failed to update vehicle'
+      );
     }
 
   } catch (error) {
-    console.log("ERROR:", error);
+    console.log('Error:', error);
+
+    Alert.alert(
+      'Error',
+      error.message
+    );
+  } finally {
+    setLoading(false);
   }
 };
 
