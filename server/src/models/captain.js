@@ -9,12 +9,10 @@ const captainSchema = new mongoose.Schema({
   },
   vehicleType:{
     type:String,
-    required: true,
   },
 
   serviceType:{
     type:String,
-    required: true,
   },
 
   drivingLicenceFront:{
