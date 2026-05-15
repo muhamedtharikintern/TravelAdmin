@@ -34,45 +34,67 @@ const SelectadminVehicleScreen = ({ navigation, route}) => {
   const token = route?.params?.token;
 
  const handleConfirm = async () => {
-  const selectedVehicle = VEHICLES.find(v => v.id === selected);
+  const selectedVehicle = VEHICLES.find(
+    v => v.id === selected
+  );
 
   if (!selectedVehicle) {
-    Alert.alert('Error', 'Please select a vehicle');
-    return;
-  }
-
-  if (!mobileNo) {
-    Alert.alert('Error', 'Mobile number not found. Please login again.');
+    Alert.alert(
+      'Error',
+      'Please select a vehicle'
+    );
     return;
   }
 
   try {
     setLoading(true);
 
-    const response = await fetch(`${API_URL}/auth/update-vehicle`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        mobileNo: mobileNo,               
-        vehicleType: selectedVehicle.title,
-      }),
-    });
+    const response = await fetch(
+      `${API_URL}/auth/update-vehicle`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          vehicleType:
+            selectedVehicle.title,
+        }),
+      }
+    );
 
-    const result = await response.json();
-    console.log('Update vehicle response:', result);
+    const result =
+      await response.json();
+
+    console.log(
+      'Update vehicle response:',
+      result
+    );
 
     if (result.success) {
-      navigation.navigate('RideOrPorter', {
-        mobileNo: mobileNo,
-        vehicleType: selectedVehicle.title,
-      });
+      navigation.navigate(
+        'RideOrPorter',
+        {
+          vehicleType:
+            selectedVehicle.title,
+        }
+      );
     } else {
-      Alert.alert('Error', result.message || 'Failed to update vehicle');
+      Alert.alert(
+        'Error',
+        result.message ||
+          'Failed to update vehicle'
+      );
     }
 
   } catch (error) {
     console.log('Error:', error);
-    Alert.alert('Error', error.message);
+
+    Alert.alert(
+      'Error',
+      error.message
+    );
   } finally {
     setLoading(false);
   }

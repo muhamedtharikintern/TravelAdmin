@@ -5,10 +5,11 @@ import authMiddleware from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// REGISTER
+
+// ====================== REGISTER ======================
 router.post("/register", async (req, res) => {
   try {
-    const { mobileNo, name } = req.body;
+    const { mobileNo } = req.body;
 
     if (!mobileNo) {
       return res.status(400).json({
@@ -26,7 +27,10 @@ router.post("/register", async (req, res) => {
       });
     }
 
-    const user = await User.create({ mobileNo, name });
+    const user = await User.create({
+      mobileNo,
+      name,
+    });
 
     const token = jwt.sign(
       { userId: user._id },
@@ -43,6 +47,7 @@ router.post("/register", async (req, res) => {
 
   } catch (error) {
     console.log(error);
+
     return res.status(500).json({
       success: false,
       message: "Server Error",
@@ -50,7 +55,8 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// LOGIN
+
+// ====================== LOGIN ======================
 router.post("/login", async (req, res) => {
   try {
     const { mobileNo } = req.body;
@@ -86,6 +92,7 @@ router.post("/login", async (req, res) => {
 
   } catch (error) {
     console.log(error);
+
     return res.status(500).json({
       success: false,
       message: "Server Error",
@@ -93,114 +100,117 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// UPDATE VEHICLE TYPE
-router.post("/update-vehicle", async (req, res) => {
-  try {
-    const { mobileNo, vehicleType } = req.body;
 
-    if (!mobileNo || !vehicleType) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "mobileNo and vehicleType required" 
+// ====================== UPDATE VEHICLE ======================
+router.post(
+  "/update-vehicle",
+  authMiddleware,
+  async (req, res) => {
+    try {
+      const { vehicleType } = req.body;
+
+      if (!vehicleType) {
+        return res.status(400).json({
+          success: false,
+          message: "vehicleType required",
+        });
+      }
+
+      const user = await User.findByIdAndUpdate(
+        req.user._id,
+        { vehicleType },
+        { new: true }
+      );
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Vehicle updated",
+        user,
       });
-    }
 
-    // ✅ FIND BY mobileNo AND UPDATE vehicleType
-    const user = await User.findOneAndUpdate(
-      { mobileNo },
-      { vehicleType },
-      { new: true }
-    );
+    } catch (error) {
+      console.log(error);
 
-    if (!user) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "User not found" 
-      });
-    }
-
-    return res.status(200).json({ 
-      success: true, 
-      message: "Vehicle updated", 
-      user 
-    });
-
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({ 
-      success: false, 
-      message: "Server Error" 
-    });
-  }
-});
-
-// ✅ UPLOAD LICENSE - single route for both images + license number
-router.post("/upload-license", async (req, res) => {
-  try {
-    const {
-      mobileNo,
-      drivingLicenceFront,
-      drivingLicenceBack,
-      drivingLicenceNo,
-    } = req.body;
-
-    // validate
-    if (!mobileNo) {
-      return res.status(400).json({
+      return res.status(500).json({
         success: false,
-        message: "Mobile number is required",
+        message: "Server Error",
       });
     }
-
-    // find captain by mobileNo and update
-    const user = await User.findOneAndUpdate(
-      { mobileNo: mobileNo },           // ✅ correct field name
-      {
-        drivingLicenceFront: drivingLicenceFront,  // ✅ matches schema
-        drivingLicenceBack: drivingLicenceBack,    // ✅ matches schema
-        drivingLicenceNo: drivingLicenceNo,        // ✅ matches schema
-      },
-      { new: true }
-    );
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "Captain not found",
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: "License uploaded successfully",
-      user,
-    });
-
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({
-      success: false,
-      message: "Server Error",
-    });
   }
-});
+);
 
-// GET PROFILE
+
+// ====================== UPLOAD LICENSE ======================
+router.post(
+  "/upload-license",
+  authMiddleware,
+  async (req, res) => {
+    try {
+      const {
+        drivingLicenceFront,
+        drivingLicenceBack,
+        drivingLicenceNo,
+      } = req.body;
+
+      const user = await User.findByIdAndUpdate(
+        req.user._id,
+        {
+          drivingLicenceFront,
+          drivingLicenceBack,
+          drivingLicenceNo,
+        },
+        { new: true }
+      );
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "License uploaded successfully",
+        user,
+      });
+
+    } catch (error) {
+      console.log(error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Server Error",
+      });
+    }
+  }
+);
+
+
+// ====================== GET PROFILE ======================
 router.get("/me", authMiddleware, async (req, res) => {
   try {
-    const user = await User.findById(req.userId);
-
     return res.status(200).json({
       success: true,
-      user,
+      user: req.user,
     });
 
   } catch (error) {
+    console.log(error);
+
     return res.status(500).json({
       success: false,
       message: "Server Error",
     });
   }
 });
+
 
 export default router;
