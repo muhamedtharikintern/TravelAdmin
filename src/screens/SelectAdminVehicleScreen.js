@@ -9,6 +9,8 @@ import {
   Image,
 } from 'react-native';
 
+const API_URL = "https://traveladmin.duckdns.org";
+
 
 const VEHICLES = [
   { id: '1', title: 'Bike', subtitle: 'Bike Taxi & Delivery', icon: require('../assets/bike.png') },
@@ -25,8 +27,69 @@ const VEHICLES = [
   { id: '12', title: '17ft', subtitle: 'Delivery, etc', icon: require('../assets/truck2.png') },
 ];
 
-const SelectadminVehicleScreen = ({ navigation }) => {
+const SelectadminVehicleScreen = ({ navigation, route}) => {
   const [selected, setSelected] = useState('1');
+
+  const mobileNo = route?.params?.mobileNo;
+  const token = route?.params?.token;
+
+    const handleConfirm = async () => {
+    const selectedVehicle = VEHICLES.find(v => v.id === selected);
+
+    if (!selectedVehicle) {
+      Alert.alert('Error', 'Please select a vehicle');
+      return;
+    }
+
+    if (!mobileNo) {
+      Alert.alert('Error', 'Mobile number not found. Please login again.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const response = await fetch(`${API_URL}/auth/update-vehicle`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`, 
+        },
+        body: JSON.stringify({
+          vehicleType: selectedVehicle.title,  
+        }),
+      });
+
+      const rawText = await response.text();
+      console.log('Update vehicle response:', rawText);
+
+      let result;
+      try {
+        result = JSON.parse(rawText);
+      } catch (e) {
+        Alert.alert('Server Error', 'Invalid response from server');
+        return;
+      }
+
+      if (result.success) {
+        console.log('✅ Vehicle updated:', selectedVehicle.title);
+        // ✅ NAVIGATE and pass mobileNo forward
+        navigation.navigate('RideOrPorter', {
+          mobileNo: mobileNo,
+          token: token,
+          vehicleType: selectedVehicle.title,
+        });
+      } else {
+        Alert.alert('Error', result.message || 'Failed to update vehicle');
+      }
+
+    } catch (error) {
+      console.log('Error:', error);
+      Alert.alert('Error', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const renderItem = ({ item }) => {
     const isSelected = selected === item.id;

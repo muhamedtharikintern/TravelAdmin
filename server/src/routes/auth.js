@@ -93,6 +93,35 @@ router.post("/login", async (req, res) => {
   }
 });
 
+// UPDATE VEHICLE TYPE
+// UPDATE VEHICLE TYPE
+router.post("/update-vehicle", authMiddleware, async (req, res) => {
+  try {
+    const { vehicleType } = req.body;
+
+    if (!vehicleType) {
+      return res.status(400).json({ success: false, message: "vehicleType required" });
+    }
+
+    // ✅ USE userId FROM TOKEN (set by authMiddleware)
+    const user = await User.findByIdAndUpdate(
+      req.userId,
+      { vehicleType },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    return res.status(200).json({ success: true, message: "Vehicle updated", user });
+
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ success: false, message: "Server Error" });
+  }
+});
+
 // ✅ UPLOAD LICENSE - single route for both images + license number
 router.post("/upload-license", async (req, res) => {
   try {

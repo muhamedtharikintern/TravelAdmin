@@ -22,87 +22,48 @@ const EnterOTPScreen = ({ navigation, route }) => {
   const confirm = route?.params?.confirm;
   const mobileNo = route?.params?.mobileNo; // ✅ get mobileNo from previous screen
 
-  const verifyOTP = async (otpCode) => {
-    if (!confirm) {
-      setError('Session expired. Please go back and try again.');
-      return;
-    }
-    try {
-      setLoading(true);
-      setError('');
+  // EnterOTPScreen.js - simplified verifyOTP
+const verifyOTP = async (otpCode) => {
+  if (!confirm) {
+    setError('Session expired. Please go back and try again.');
+    return;
+  }
+  try {
+    setLoading(true);
+    setError('');
 
-      // ✅ Step 1: Verify OTP with Firebase
-      await confirm.confirm(otpCode);
-      console.log('OTP verified successfully');
+    
+    await confirm.confirm(otpCode);
+    console.log('OTP verified successfully');
 
-      // ✅ Step 2: Check if user exists in MongoDB
-      await registerOrLoginUser();
+    
+    const loginResponse = await fetch(`${API_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mobileNo: mobileNo }),
+    });
 
-    } catch (err) {
-      console.log('OTP Error:', err);
-      setError('Invalid OTP. Please try again.');
-      setOtp(['', '', '', '', '', '']);
-      inputs.current[0].focus();
-    } finally {
-      setLoading(false);
-    }
-  };
+    const loginResult = await loginResponse.json();
 
-  // ✅ Register or Login user in MongoDB
-  const registerOrLoginUser = async () => {
-    try {
-      // First try to login
-      const loginResponse = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mobileNo: mobileNo }),
+    if (loginResult.success) {
+      navigation.navigate('Whichcity', {
+        mobileNo: mobileNo,
+        token: loginResult.token,
+        user: loginResult.user,
       });
-
-      const loginResult = await loginResponse.json();
-      console.log('Login result:', loginResult);
-
-      if (loginResult.success) {
-        // ✅ Existing user - go to home
-        console.log('Existing user logged in');
-        navigation.navigate('Whichcity', {
-          mobileNo: mobileNo,
-          token: loginResult.token,
-          user: loginResult.user,
-        });
-
-      } else {
-        // ✅ New user - register them
-        const registerResponse = await fetch(`${API_URL}/auth/register`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            mobileNo: mobileNo,
-            name: 'Captain',        // ← update this if you collect name earlier
-            vehicleType: 'unknown', // ← update later in profile screen
-            serviceType: 'unknown', // ← update later in profile screen
-          }),
-        });
-
-        const registerResult = await registerResponse.json();
-        console.log('Register result:', registerResult);
-
-        if (registerResult.success) {
-          console.log('New user registered');
-          navigation.navigate('Whichcity', {
-            mobileNo: mobileNo,
-            token: registerResult.token,
-            user: registerResult.user,
-          });
-        } else {
-          Alert.alert('Error', registerResult.message || 'Registration failed');
-        }
-      }
-
-    } catch (error) {
-      console.log('API Error:', error);
-      Alert.alert('Error', 'Failed to connect to server. Please try again.');
+    } else {
+      Alert.alert('Error', loginResult.message);
     }
-  };
+
+  } catch (err) {
+    console.log('OTP Error:', err);
+    setError('Invalid OTP. Please try again.');
+    setOtp(['', '', '', '', '', '']);
+    inputs.current[0].focus();
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleChange = (text, index) => {
     if (text.length > 1) return;

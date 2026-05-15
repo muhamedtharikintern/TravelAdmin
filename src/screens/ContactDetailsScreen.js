@@ -25,7 +25,7 @@ const sendOTP = async () => {
     const mobileNo = `+91${phone}`;
 
     // 1. CHECK / LOGIN
-    const loginRes = await fetch(`${API_URL}/api/auth/login`, {
+    const loginRes = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mobileNo }),
@@ -45,7 +45,7 @@ const sendOTP = async () => {
 
     // 2. IF NOT FOUND → REGISTER
     if (!loginData.success) {
-      const registerRes = await fetch(`${API_URL}/api/auth/register`, {
+      const registerRes = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mobileNo }),
@@ -72,7 +72,7 @@ const sendOTP = async () => {
     const confirmation = await auth().signInWithPhoneNumber(mobileNo);
 
     // 4. NAVIGATE TO OTP SCREEN
-    navigation.navigate('EnterOTP', { confirm: confirmation });
+    navigation.navigate('EnterOTP', { confirm: confirmation , mobileNo:`+91${phone}`});
 
   } catch (error) {
     console.log('CATCH ERROR:', error);

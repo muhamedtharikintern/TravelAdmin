@@ -10,7 +10,9 @@ import {
 import Icon from 'react-native-vector-icons/Feather';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
-const WhichCityScreen = ({ navigation }) => {
+const WhichCityScreen = ({ navigation, route }) => {
+  const mobileNo = route?.params?.mobileNo;  
+  const token = route?.params?.token;
   return (
     <SafeAreaView style={styles.container}>
 
@@ -58,7 +60,10 @@ const WhichCityScreen = ({ navigation }) => {
 
       {/* CTA BUTTON */}
       <TouchableOpacity style={styles.button}
-      onPress={() => navigation.navigate('selectAdminvehicle')}>
+      onPress={() => navigation.navigate('SelectadminVehicle', {
+          mobileNo: mobileNo,  // ✅ pass forward
+          token: token,
+         })}>
         <Text style={styles.buttonText}>Confirm City</Text>
       </TouchableOpacity>
 

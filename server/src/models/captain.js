@@ -7,12 +7,19 @@ const captainSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
+  name:{
+    type:String,
+    default: null,
+  },
+
   vehicleType:{
     type:String,
+    default: null,
   },
 
   serviceType:{
     type:String,
+    default: null,
   },
 
   drivingLicenceFront:{
@@ -28,12 +35,10 @@ const captainSchema = new mongoose.Schema({
   },
 
   drivingLicenceNo:{
-    type:String
+    type:String,
+    default: null,
   },
 
-  name:{
-    type: String,
-  },
 },
  {
   timestamps: true,
