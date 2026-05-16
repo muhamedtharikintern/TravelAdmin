@@ -190,7 +190,7 @@ router.post(
   }
 );
 
-router.post("/update-servic",authMiddleware,
+router.post("/update-service",authMiddleware,
   async (req,res) =>{
     try{
       const {
