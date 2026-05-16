@@ -8,6 +8,7 @@ import {
   FlatList,
   Alert, 
   Image,
+  ActivityIndicator,
 } from 'react-native';
 
 const API_URL = "https://traveladmin.duckdns.org";

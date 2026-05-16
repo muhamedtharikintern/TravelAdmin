@@ -10,7 +10,7 @@ import {
 
 const API_URL = "https://traveladmin.duckdns.org";
 
-const RideOrPorterScreen = ({ navigation }) => {
+const RideOrPorterScreen = ({ navigation,route}) => {
   const [selected, setSelected] = useState('RIDE');
   const [loading, setLoading] = useState(false);
 
@@ -98,7 +98,7 @@ const RideOrPorterScreen = ({ navigation }) => {
 
       {/* CTA BUTTON */}
       <TouchableOpacity style={styles.button}
-      onPress={() => navigation.navigate('DriverLicense')}>
+      onPress={handleConfirm }>
         <Text style={styles.buttonText}>Confirm Service’s</Text>
       </TouchableOpacity>
 
