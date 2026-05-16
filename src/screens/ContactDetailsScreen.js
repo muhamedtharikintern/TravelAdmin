@@ -23,6 +23,7 @@ const sendOTP = async () => {
 
   try {
     const mobileNo = `+91${phone}`;
+    let token = null;
 
     // 1. CHECK / LOGIN
     const loginRes = await fetch(`${API_URL}/auth/login`, {
@@ -41,6 +42,11 @@ const sendOTP = async () => {
     } catch (e) {
       Alert.alert('Server Error', `Login endpoint unreachable.\nStatus: ${loginRes.status}`);
       return;
+    }
+
+     if (loginData.success) {
+      token = loginData.token; 
+      console.log('LOGIN TOKEN:', token);
     }
 
     // 2. IF NOT FOUND → REGISTER
@@ -66,13 +72,15 @@ const sendOTP = async () => {
         Alert.alert('Error', registerData.message);
         return;
       }
+      token = registerData.token; 
+      console.log('REGISTER TOKEN:', token);
     }
 
     // 3. SEND OTP VIA FIREBASE
     const confirmation = await auth().signInWithPhoneNumber(mobileNo);
 
     // 4. NAVIGATE TO OTP SCREEN
-    navigation.navigate('EnterOTP', { confirm: confirmation , mobileNo:`+91${phone}`});
+    navigation.navigate('EnterOTP', { confirm: confirmation , token});
 
   } catch (error) {
     console.log('CATCH ERROR:', error);
