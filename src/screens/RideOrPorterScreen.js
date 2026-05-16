@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Image,
+  Alert,
 } from 'react-native';
 
 const API_URL = "https://traveladmin.duckdns.org";

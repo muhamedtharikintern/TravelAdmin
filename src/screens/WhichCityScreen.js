@@ -32,7 +32,7 @@ const handleConfirmCity = async () => {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          City: selectedCity,
+          city: selectedCity,
         }),
       }
     );

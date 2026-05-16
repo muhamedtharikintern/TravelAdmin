@@ -104,9 +104,9 @@ router.post(
   authMiddleware,
   async (req, res) => {
     try {
-      const { city } = req.body;
+      const { City } = req.body;
 
-      if (!city) {
+      if (!City) {
         return res.status(400).json({
           success: false,
           message: "City required",
@@ -116,7 +116,7 @@ router.post(
       const user =
         await User.findByIdAndUpdate(
           req.userId, // ✅ use this
-          { city },
+          { City },
           { new: true }
         );
 
@@ -189,6 +189,43 @@ router.post(
     }
   }
 );
+
+router.post("/update-servic",authMiddleware,
+  async (req,res) =>{
+    try{
+      const {
+        serviceType
+      } = req.body;
+
+      const user = await User.findByIdAndUpdate(
+        req.userId,
+        {
+          serviceType
+        },
+        { new: true}
+      );
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found",
+        });
+      }
+      return res.status(200).json({
+        success: true,
+        message: "Service type updated",
+        user,
+      });
+    } catch (error) {
+      console.log(error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Server Error",
+      });
+    }
+  }
+)
 
 
 // ====================== UPLOAD LICENSE ======================
