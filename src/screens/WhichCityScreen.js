@@ -47,7 +47,7 @@ const handleConfirmCity = async () => {
 
     if (result.success) {
       navigation.navigate(
-        "selectadminVehicle",
+        "selectAdminvehicle",
         {
           mobileNo,
           token,

@@ -20,7 +20,8 @@ const EnterOTPScreen = ({ navigation, route }) => {
 
   const inputs = useRef([]);
   const confirm = route?.params?.confirm;
-  const mobileNo = route?.params?.mobileNo; // ✅ get mobileNo from previous screen
+  const mobileNo = route?.params?.mobileNo;
+  const token = route?.params?.token; 
 
   // EnterOTPScreen.js - simplified verifyOTP
 const verifyOTP = async (otpCode) => {
@@ -47,9 +48,8 @@ const verifyOTP = async (otpCode) => {
 
     if (loginResult.success) {
       navigation.navigate('Whichcity', {
-        mobileNo: mobileNo,
-        token: loginResult.token,
-        user: loginResult.user,
+        mobileNo,
+        token,
       });
     } else {
       Alert.alert('Error', loginResult.message);
