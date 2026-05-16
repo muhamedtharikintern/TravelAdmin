@@ -80,7 +80,7 @@ const sendOTP = async () => {
     const confirmation = await auth().signInWithPhoneNumber(mobileNo);
 
     // 4. NAVIGATE TO OTP SCREEN
-    navigation.navigate('EnterOTP', { confirm: confirmation , token});
+    navigation.navigate('EnterOTP', { confirm: confirmation ,mobileNo, token});
 
   } catch (error) {
     console.log('CATCH ERROR:', error);
