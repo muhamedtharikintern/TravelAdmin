@@ -29,7 +29,6 @@ router.post("/register", async (req, res) => {
 
     const user = await User.create({
       mobileNo,
-      name,
     });
 
     const token = jwt.sign(

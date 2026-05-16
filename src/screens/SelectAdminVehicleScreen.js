@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   SafeAreaView,
   FlatList,
+  Alert, 
   Image,
 } from 'react-native';
 
@@ -29,6 +30,7 @@ const VEHICLES = [
 
 const SelectadminVehicleScreen = ({ navigation, route}) => {
   const [selected, setSelected] = useState('1');
+  const [loading, setLoading] = useState(false);
 
   const mobileNo = route?.params?.mobileNo;
   const token = route?.params?.token;
@@ -58,8 +60,7 @@ const SelectadminVehicleScreen = ({ navigation, route}) => {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          vehicleType:
-            selectedVehicle.title,
+          vehicleType:selectedVehicle.title,
         }),
       }
     );
@@ -68,16 +69,16 @@ const SelectadminVehicleScreen = ({ navigation, route}) => {
       await response.json();
 
     console.log(
-      'Update vehicle response:',
-      result
+      'Update vehicle response:',result
     );
 
     if (result.success) {
       navigation.navigate(
         'RideOrPorter',
         {
-          vehicleType:
-            selectedVehicle.title,
+          vehicleType:selectedVehicle.title,
+          mobileNo,   
+          token,
         }
       );
     } else {
