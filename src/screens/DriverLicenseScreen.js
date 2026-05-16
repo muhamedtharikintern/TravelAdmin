@@ -17,7 +17,8 @@ import storage from '@react-native-firebase/storage';
 
 const DriverLicenseScreen = ({ navigation, route }) => {
   const API_URL ="https://traveladmin.duckdns.org";
-  const mobileNo = route?.params?.mobileNo; // ✅ get mobileNo from previous screen
+  const mobileNo = route?.params?.mobileNo;
+  const token = route?.params?.token;
 
   const [frontImage, setFrontImage] = useState(null);
   const [backImage, setBackImage] = useState(null);
@@ -110,12 +111,14 @@ const DriverLicenseScreen = ({ navigation, route }) => {
       // ✅ Save to MongoDB - matching your schema fields exactly
       const response = await fetch(`${API_URL}/auth/upload-license`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json',
+                  Authorization: `Bearer ${token}`
+         },
         body: JSON.stringify({
-          mobileNo: mobileNo,                  // ✅ schema field
-          drivingLicenceFront: frontURL,        // ✅ schema field
-          drivingLicenceBack: backURL,          // ✅ schema field
-          drivingLicenceNo: licenseNumber,      // ✅ schema field
+          mobileNo: mobileNo,                  
+          drivingLicenceFront: frontURL,        
+          drivingLicenceBack: backURL,          
+          drivingLicenceNo: licenseNumber,      
         }),
       });
 

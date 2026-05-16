@@ -8,8 +8,48 @@ import {
   Image,
 } from 'react-native';
 
+const API_URL = "https://traveladmin.duckdns.org";
+
 const RideOrPorterScreen = ({ navigation }) => {
   const [selected, setSelected] = useState('RIDE');
+  const [loading, setLoading] = useState(false);
+
+  const mobileNo = route?.params?.mobileNo; 
+  const token = route?.params?.token;
+
+  const handleConfirm = async () => {
+    try {
+      setLoading(true);
+
+      const response = await fetch(`${API_URL}/auth/update-service`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ serviceType: selected }),
+      });
+
+      const result = await response.json();
+      console.log('Service update:', result);
+
+      if (result.success) {
+        navigation.navigate('DriverLicense', {
+          mobileNo, 
+          token,    
+        });
+      } else {
+        Alert.alert('Error', result.message || 'Failed to update service');
+      }
+
+    } catch (error) {
+      console.log(error);
+      Alert.alert('Error', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   return (
     <SafeAreaView style={styles.container}>

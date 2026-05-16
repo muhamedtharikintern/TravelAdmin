@@ -204,7 +204,7 @@ router.post(
       } = req.body;
 
       const user = await User.findByIdAndUpdate(
-        req.user._id,
+        req.userId,
         {
           drivingLicenceFront,
           drivingLicenceBack,
