@@ -347,10 +347,15 @@ router.post('/edit-profile',authMiddleware,async (req,res)=>{
 // ====================== GET PROFILE ======================
 router.get("/me", authMiddleware, async (req, res) => {
   try {
-    const user = await User.findById(req.userId); // fresh from DB
+    // ✅ Disable caching
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+
+    const user = await User.findById(req.userId); // ✅ fresh from DB
     return res.status(200).json({
       success: true,
-      user: req.user,
+      user: user,
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: "Server Error" });
