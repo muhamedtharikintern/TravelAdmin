@@ -16,6 +16,7 @@ import storage from '@react-native-firebase/storage';
 
 
 const DriverLicenseScreen = ({ navigation, route }) => {
+  const API_URL ="https://traveladmin.duckdns.org";
   
   const mobileNo = route?.params?.mobileNo;
   const token = route?.params?.token;
@@ -27,7 +28,7 @@ const DriverLicenseScreen = ({ navigation, route }) => {
   const [uploadingFront, setUploadingFront] = useState(false);
   const [uploadingBack, setUploadingBack] = useState(false);
 
-  const pickImage = (side) => {const API_URL ="https://traveladmin.duckdns.org";
+  const pickImage = (side) => {
     Alert.alert(
       'Upload Photo',
       'Choose an option',
