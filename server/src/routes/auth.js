@@ -421,7 +421,7 @@ router.post("/upload-permit", authMiddleware, async (req, res) => {
     const { permitUrl } = req.body;
 
     const user = await User.findByIdAndUpdate(
-      req.const [state, dispatch] = useReducer(first, second, third),
+      req.userId,
       { permitUrl },
       { new: true }
     );
