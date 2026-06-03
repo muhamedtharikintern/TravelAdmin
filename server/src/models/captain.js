@@ -52,6 +52,18 @@ const captainSchema = new mongoose.Schema({
   selfieUrl:{
     type:String,
     default: null,
+  },
+  RCFront:{
+    type:String,
+    default:null,
+  },
+  RCBack:{
+    type:String,
+    default:null,
+  },
+  vehicleNO:{
+    type:String,
+    default:null,
   }
 
 },

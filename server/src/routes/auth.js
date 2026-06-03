@@ -343,6 +343,48 @@ router.post('/edit-profile',authMiddleware,async (req,res)=>{
     }
 });
 
+router.post("/upload-rcdetails",authMiddleware, async (req, res) => {
+    try {
+      const {
+        RCFront,
+        RCBack,
+        vehicleNo,
+      } = req.body;
+
+      const user = await User.findByIdAndUpdate(
+        req.userId,
+        {
+          RCBackFront,
+          RCBack,
+          vehicleNo,
+        },
+        { new: true }
+      );
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Vehicle Details uploaded successfully",
+        user,
+      });
+
+    } catch (error) {
+      console.log(error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Server Error",
+      });
+    }
+  }
+);
+
 
 // ====================== GET PROFILE ======================
 router.get("/me", authMiddleware, async (req, res) => {
