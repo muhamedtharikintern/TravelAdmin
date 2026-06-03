@@ -309,13 +309,15 @@ router.post('/edit-profile',authMiddleware,async (req,res)=>{
     const{
       fullName,
       DOB,
+      gender,
     } = req.body;
 
     const user = await User.findByIdAndUpdate(
       req.userId,
       {
         fullName,
-        DOB
+        DOB,
+        gender,
       },
       {new:true}
     );

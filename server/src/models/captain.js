@@ -12,7 +12,7 @@ const captainSchema = new mongoose.Schema({
     default: null,
   },
   DOB:{
-    type: Date,
+    type: String,
     defualt:null,
   },
   gender:{
