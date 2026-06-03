@@ -385,6 +385,37 @@ router.post("/upload-rcdetails",authMiddleware, async (req, res) => {
   }
 );
 
+router.post("/upload-id-proof", authMiddleware, async (req, res) => {
+  try {
+    const { idType, idUrl, idNumber } = req.body;
+
+    console.log('ID Proof body:', req.body);
+
+    const updateFields = idType === 'aadhar'
+      ? { aadharUrl: idUrl, aadharNo: idNumber }
+      : { panUrl: idUrl, panNo: idNumber };
+
+    const user = await User.findByIdAndUpdate(
+      req.userId,
+      updateFields,
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "ID proof uploaded successfully",
+      user: user,
+    });
+  } catch (error) {
+    console.log('ID proof upload error:', error);
+    return res.status(500).json({ success: false, message: "Server Error" });
+  }
+});
+
 
 // ====================== GET PROFILE ======================
 router.get("/me", authMiddleware, async (req, res) => {

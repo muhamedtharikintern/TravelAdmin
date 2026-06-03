@@ -61,10 +61,22 @@ const captainSchema = new mongoose.Schema({
     type:String,
     default:null,
   },
-  vehicleNO:{
+  vehicleNo:{
     type:String,
     default:null,
-  }
+  },
+  aadharUrl:{ type: String,
+     default: null 
+    },
+  aadharNo:{ type: String, 
+    default: null 
+  },
+  panUrl:{ type: String,
+     default: null 
+    },
+  panNo:{ type: String, 
+    default: null 
+  },
 
 },
  {
