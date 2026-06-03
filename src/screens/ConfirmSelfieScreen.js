@@ -49,7 +49,7 @@ const ConfirmSelfieScreen = ({ navigation, route }) => {
 
       if (result.success) {
         Alert.alert('Success', 'Selfie uploaded successfully!');
-        navigation.navigate('EditProfile', { mobileNo, token });
+        navigation.navigate('EditProfile', { mobileNo, token,selfieUri});
       } else {
         Alert.alert('Error', result.message || 'Something went wrong');
       }

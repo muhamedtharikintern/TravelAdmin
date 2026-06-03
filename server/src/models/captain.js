@@ -7,7 +7,15 @@ const captainSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
-  name:{
+  fullName:{
+    type:String,
+    default: null,
+  },
+  DOB:{
+    type: Date,
+    defualt:null,
+  },
+  gender:{
     type:String,
     default: null,
   },

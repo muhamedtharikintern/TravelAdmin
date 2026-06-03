@@ -304,6 +304,43 @@ router.post("/upload-selfie",authMiddleware,async (req,res) =>{
     }
 });
 
+router.post('/edit-profile',authMiddleware,async (req,res)=>{
+  try{
+    const{
+      fullName,
+      DOB,
+    } = req.body;
+
+    const user = await User.findByIdAndUpdate(
+      req.userId,
+      {
+        fullName,
+        DOB
+      },
+      {new:true}
+    );
+
+     if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found",
+        });
+      }
+        return res.status(200).json({
+        success: true,
+        message: "Selfie uploaded successfully",
+        user,
+      }); 
+  } catch (error) {
+      console.log(error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Server Error",
+      });
+    }
+});
+
 
 // ====================== GET PROFILE ======================
 router.get("/me", authMiddleware, async (req, res) => {
