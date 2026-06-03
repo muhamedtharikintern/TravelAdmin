@@ -354,7 +354,7 @@ router.post("/upload-rcdetails",authMiddleware, async (req, res) => {
       const user = await User.findByIdAndUpdate(
         req.userId,
         {
-          RCBackFront,
+          RCFront,
           RCBack,
           vehicleNo,
         },
