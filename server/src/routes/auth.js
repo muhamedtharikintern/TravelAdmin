@@ -278,7 +278,7 @@ router.post("/upload-selfie",authMiddleware,async (req,res) =>{
       try{
         const {selfieUrl} = req.body;
 
-        const user = await  user.findByIdAndUpdate(
+        const user = await  User.findByIdAndUpdate(
           req.userId,{selfieUrl},{new: true}
         );
 

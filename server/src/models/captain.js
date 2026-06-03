@@ -41,7 +41,7 @@ const captainSchema = new mongoose.Schema({
     default: null,
   },
 
-  selfie:{
+  selfieUrl:{
     type:String,
     default: null,
   }
