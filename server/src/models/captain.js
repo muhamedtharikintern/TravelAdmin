@@ -30,19 +30,21 @@ const captainSchema = new mongoose.Schema({
   drivingLicenceFront:{
     type: String,
     default: null,
-
   },
 
   drivingLicenceBack:{
     type: String,
     default: null,
-
   },
-
   drivingLicenceNo:{
     type:String,
     default: null,
   },
+
+  selfie:{
+    type:String,
+    default: null,
+  }
 
 },
  {

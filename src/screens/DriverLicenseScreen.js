@@ -126,7 +126,7 @@ const DriverLicenseScreen = ({ navigation, route }) => {
 
       if (result.success) {
         Alert.alert('Success', 'License uploaded successfully!');
-        navigation.navigate('TakeSelfie', { mobileNo: mobileNo });
+        navigation.navigate('TakeSelfie', { mobileNo,token });
       } else {
         Alert.alert('Error', result.message || 'Something went wrong');
       }

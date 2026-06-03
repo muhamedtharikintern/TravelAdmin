@@ -274,6 +274,13 @@ router.post(
   }
 );
 
+router.post("/take-selfie",authMiddleware,async (req,res) =>{
+
+    const selfie = req.body;
+
+
+});
+
 
 // ====================== GET PROFILE ======================
 router.get("/me", authMiddleware, async (req, res) => {
