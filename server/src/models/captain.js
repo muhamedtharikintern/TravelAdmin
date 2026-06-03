@@ -77,6 +77,19 @@ const captainSchema = new mongoose.Schema({
   panNo:{ type: String, 
     default: null 
   },
+  permitUrl: {
+     type: String, 
+     default: null 
+  },
+
+  insuranceUrl: { 
+    type: String,
+    default: null 
+  },
+  fitnessUrl: {
+     type: String,
+    default: null
+   },
 
 },
  {

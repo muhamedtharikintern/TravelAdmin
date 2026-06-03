@@ -416,6 +416,81 @@ router.post("/upload-id-proof", authMiddleware, async (req, res) => {
   }
 });
 
+router.post("/upload-permit", authMiddleware, async (req, res) => {
+  try {
+    const { permitUrl } = req.body;
+
+    const user = await User.findByIdAndUpdate(
+      req.const [state, dispatch] = useReducer(first, second, third),
+      { permitUrl },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Permit uploaded successfully",
+      user: user,
+    });
+  } catch (error) {
+    console.log('Permit upload error:', error);
+    return res.status(500).json({ success: false, message: "Server Error" });
+  }
+});
+
+router.post("/upload-insurance", authMiddleware, async (req, res) => {
+  try {
+    const { insuranceUrl } = req.body;
+
+    const user = await User.findByIdAndUpdate(
+      req.userId,
+      { insuranceUrl },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Insurance uploaded successfully",
+      user: user,
+    });
+  } catch (error) {
+    console.log('Insurance upload error:', error);
+    return res.status(500).json({ success: false, message: "Server Error" });
+  }
+});
+
+router.post("/upload-fitness", authMiddleware, async (req, res) => {
+  try {
+    const { fitnessUrl } = req.body;
+
+    const user = await User.findByIdAndUpdate(
+      req.userId,
+      { fitnessUrl },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Fitness certificate uploaded successfully",
+      user: user,
+    });
+  } catch (error) {
+    console.log('Fitness upload error:', error);
+    return res.status(500).json({ success: false, message: "Server Error" });
+  }
+});
+
 
 // ====================== GET PROFILE ======================
 router.get("/me", authMiddleware, async (req, res) => {
