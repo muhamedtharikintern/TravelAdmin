@@ -46,7 +46,7 @@ const EditProfileScreen = ({ navigation, route }) => {
         setFullName(user.fullName || '');
         setDob(user.DOB || '');
         setGender(user.gender || 'male');
-        setSelfieUrl(user.selfie || null); // ✅ selfie URL from MongoDB
+        setSelfieUrl(user.selfieUrl || null); // ✅ selfie URL from MongoDB
       }
     } catch (err) {
       console.log('Fetch profile error:', err);
