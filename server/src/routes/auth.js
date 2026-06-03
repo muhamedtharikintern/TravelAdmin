@@ -274,11 +274,34 @@ router.post(
   }
 );
 
-router.post("/take-selfie",authMiddleware,async (req,res) =>{
+router.post("/upload-selfie",authMiddleware,async (req,res) =>{
+      try{
+        const {selfie} = req.body;
 
-    const selfie = req.body;
+        const user = await  user.findByIdAndUpdate(
+          req.userId,{selfie},{new: true}
+        );
 
+        if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found",
+        });
+      }
+        return res.status(200).json({
+        success: true,
+        message: "Selfie uploaded successfully",
+        user,
+      });
 
+    } catch (error) {
+      console.log(error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Server Error",
+      });
+    }
 });
 
 
