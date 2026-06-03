@@ -117,7 +117,7 @@ const EditProfileScreen = ({ navigation, route }) => {
             source={
               selfieUrl
                 ? { uri: selfieUrl }
-                : require('../assets/back.png') // fallback placeholder
+                : require('../assets/user.png') // fallback placeholder
             }
             style={styles.profileImage}
           />
