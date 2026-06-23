@@ -16,7 +16,7 @@ app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 
 // Routes
 app.use('/auth', authRouter);
-app.use('/authUser',authUserRouter);
+app.use('/authuser',authUserRouter);
 app.use('/order',orderRouter);
 
 export default app;
