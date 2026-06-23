@@ -1,6 +1,6 @@
 import express from "express";
 import jwt from "jsonwebtoken";
-import User from "../models/captain.js";
+import User from "../models/user.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -12,8 +12,6 @@ router.post('/user-register', async (req, res) => {
   try {
 
     const { username, password } = req.body;
-
-
 
     if (!username || !password) {
 
