@@ -1,6 +1,6 @@
 import express from "express";
 import jwt from "jsonwebtoken";
-import users from "../models/user.js";
+import User from "../models/users.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import bcrypt from "bcrypt";  
 
@@ -20,7 +20,7 @@ router.post('/user-register', async (req, res) => {
 
         success: false,
 
-        message: 'usersname and Password are required',
+        message: 'Username and Password are required',
 
       });
 
@@ -28,17 +28,17 @@ router.post('/user-register', async (req, res) => {
 
 
 
-    const existingusers = await users.findOne({ usersname });
+    const existingUser = await User.findOne({ username });
 
 
 
-    if (existingusers) {
+    if (existingUser) {
 
       return res.status(409).json({
 
         success: false,
 
-        message: 'users already exists',
+        message: 'User already exists',
 
       });
 
@@ -50,9 +50,9 @@ router.post('/user-register', async (req, res) => {
 
 
 
-    const users = await users.create({
+    const user = await User.create({
 
-      usersname,
+      username,
 
       password: hashedPassword,
 
@@ -64,13 +64,13 @@ router.post('/user-register', async (req, res) => {
 
       success: true,
 
-      message: 'users registered successfully',
+      message: 'User registered successfully',
 
-      users: {
+      user: {
 
-        id: users._id,
+        id: user._id,
 
-        usersname: users.usersname,
+        username: user.username,
 
       },
 
@@ -102,20 +102,20 @@ router.post('/user-login', async (req, res) => {
 
   try {
 
-    const { usersname, password } = req.body;
+    const { username, password } = req.body;
 
 
-    const users = await users.findOne({ usersname });
+    const user = await User.findOne({ username });
 
 
 
-    if (!users) {
+    if (!user) {
 
       return res.status(401).json({
 
         success: false,
 
-        message: 'Invalid usersname',
+        message: 'Invalid Username',
 
       });
 
@@ -127,7 +127,7 @@ router.post('/user-login', async (req, res) => {
 
       password,
 
-      users.password
+      user.password
 
     );
 
@@ -148,9 +148,9 @@ router.post('/user-login', async (req, res) => {
 
 
      const token = jwt.sign(
-       { usersId: users._id },
+       { userId: user._id },
        process.env.JWT_SECRET,
-       { expiresIn: "7d" }
+       { expiresIn: "20d" }
      );
 
 
@@ -160,9 +160,9 @@ router.post('/user-login', async (req, res) => {
       success: true,
       message: 'Login Successful',
       token,
-      users: {
-        id: users._id,
-        usersname: users.usersname,
+      user: {
+        id: user._id,
+        username: user.username,
 
       },
 
