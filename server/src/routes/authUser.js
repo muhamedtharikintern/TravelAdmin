@@ -1,6 +1,6 @@
 import express from "express";
 import jwt from "jsonwebtoken";
-import User from "../models/user.js";
+import users from "../models/userss.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import bcrypt from "bcrypt";  
 
@@ -12,15 +12,15 @@ router.post('/user-register', async (req, res) => {
 
   try {
 
-    const { username, password } = req.body;
+    const { usersname, password } = req.body;
 
-    if (!username || !password) {
+    if (!usersname || !password) {
 
       return res.status(400).json({
 
         success: false,
 
-        message: 'Username and Password are required',
+        message: 'usersname and Password are required',
 
       });
 
@@ -28,17 +28,17 @@ router.post('/user-register', async (req, res) => {
 
 
 
-    const existingUser = await User.findOne({ username });
+    const existingusers = await users.findOne({ usersname });
 
 
 
-    if (existingUser) {
+    if (existingusers) {
 
       return res.status(409).json({
 
         success: false,
 
-        message: 'User already exists',
+        message: 'users already exists',
 
       });
 
@@ -50,9 +50,9 @@ router.post('/user-register', async (req, res) => {
 
 
 
-    const user = await User.create({
+    const users = await users.create({
 
-      username,
+      usersname,
 
       password: hashedPassword,
 
@@ -64,13 +64,13 @@ router.post('/user-register', async (req, res) => {
 
       success: true,
 
-      message: 'User registered successfully',
+      message: 'users registered successfully',
 
-      user: {
+      users: {
 
-        id: user._id,
+        id: users._id,
 
-        username: user.username,
+        usersname: users.usersname,
 
       },
 
@@ -102,20 +102,20 @@ router.post('/user-login', async (req, res) => {
 
   try {
 
-    const { username, password } = req.body;
+    const { usersname, password } = req.body;
 
 
-    const user = await User.findOne({ username });
+    const users = await users.findOne({ usersname });
 
 
 
-    if (!user) {
+    if (!users) {
 
       return res.status(401).json({
 
         success: false,
 
-        message: 'Invalid Username',
+        message: 'Invalid usersname',
 
       });
 
@@ -127,7 +127,7 @@ router.post('/user-login', async (req, res) => {
 
       password,
 
-      user.password
+      users.password
 
     );
 
@@ -148,9 +148,9 @@ router.post('/user-login', async (req, res) => {
 
 
      const token = jwt.sign(
-       { userId: user._id },
+       { usersId: users._id },
        process.env.JWT_SECRET,
-       { expiresIn: "20d" }
+       { expiresIn: "7d" }
      );
 
 
@@ -160,9 +160,9 @@ router.post('/user-login', async (req, res) => {
       success: true,
       message: 'Login Successful',
       token,
-      user: {
-        id: user._id,
-        username: user.username,
+      users: {
+        id: users._id,
+        usersname: users.usersname,
 
       },
 
