@@ -12,9 +12,9 @@ router.post('/user-register', async (req, res) => {
 
   try {
 
-    const { usersname, password } = req.body;
+    const { username, password } = req.body;
 
-    if (!usersname || !password) {
+    if (!username || !password) {
 
       return res.status(400).json({
 
