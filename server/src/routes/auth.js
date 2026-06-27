@@ -59,7 +59,6 @@ router.post("/register", async (req, res) => {
 router.post("/login", async (req, res) => {
   try {
     const { mobileNo } = req.body;
-
     if (!mobileNo) {
       return res.status(400).json({
         success: false,
@@ -70,9 +69,11 @@ router.post("/login", async (req, res) => {
     const user = await User.findOne({ mobileNo });
 
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
+      // 🆕 New user — don't return error, return isRegistered: false
+      return res.status(200).json({
+        success: true,
+        isRegistered: false,
+        token: null,
       });
     }
 
@@ -84,6 +85,7 @@ router.post("/login", async (req, res) => {
 
     return res.status(200).json({
       success: true,
+      isRegistered: true,   // ✅ existing user
       message: "Login Success",
       token,
       user,
@@ -91,7 +93,6 @@ router.post("/login", async (req, res) => {
 
   } catch (error) {
     console.log(error);
-
     return res.status(500).json({
       success: false,
       message: "Server Error",
