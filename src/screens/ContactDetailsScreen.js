@@ -10,6 +10,7 @@ import {
   Image,
   TextInput,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ContactDetailsScreen = ({ navigation }) => {
 const API_URL = "https://traveladmin.duckdns.org";
@@ -46,6 +47,7 @@ const sendOTP = async () => {
 
      if (loginData.success) {
       token = loginData.token; 
+      await AsyncStorage.setItem('token', token);
       console.log('LOGIN TOKEN:', token);
     }
 
@@ -73,7 +75,13 @@ const sendOTP = async () => {
         return;
       }
       token = registerData.token; 
+      await AsyncStorage.setItem('token', token);
       console.log('REGISTER TOKEN:', token);
+    }
+
+    // Save token if available
+    if (token) {
+      await AsyncStorage.setItem('token', token);
     }
 
     // 3. SEND OTP VIA FIREBASE

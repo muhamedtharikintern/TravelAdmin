@@ -10,10 +10,10 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const EnterOTPScreen = ({ navigation, route }) => {
-  const API_URL ="https://traveladmin.duckdns.org";
+  const API_URL = "https://traveladmin.duckdns.org";
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -21,10 +21,59 @@ const EnterOTPScreen = ({ navigation, route }) => {
   const inputs = useRef([]);
   const confirm = route?.params?.confirm;
   const mobileNo = route?.params?.mobileNo;
-  const token = route?.params?.token; 
+  const token = route?.params?.token;
 
-  // EnterOTPScreen.js - simplified verifyOTP
-const verifyOTP = async (otpCode) => {
+  // const verifyOTP = async (otpCode) => {
+  //   if (!confirm) {
+  //     setError('Session expired. Please go back and try again.');
+  //     return;
+  //   }
+  //   try {
+  //     setLoading(true);
+  //     setError('');
+
+  //     // Step 1: Verify Firebase OTP
+  //     await confirm.confirm(otpCode);
+  //     console.log('OTP verified successfully');
+
+  //     // Step 2: Call backend to check if user exists in MongoDB
+  //     const loginResponse = await fetch(`${API_URL}/auth/login`, {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({ mobileNo: mobileNo }),
+  //     });
+
+  //     const loginResult = await loginResponse.json();
+
+  //     if (loginResult.success) {
+  //       if (loginResult.isRegistered) {
+  //         // ✅ Existing user → save token and go to DutyDashboard
+  //         await AsyncStorage.setItem('token', loginResult.token);
+  //         console.log('Existing user, navigating to DutyDashboard');
+  //         navigation.navigate('DutyDashboard');
+  //       } else {
+  //         // 🆕 New user → proceed to registration flow
+  //         console.log('New user, navigating to Whichcity');
+  //         navigation.navigate('Whichcity', {
+  //           mobileNo,
+  //           token: loginResult.token ?? token,
+  //         });
+  //       }
+  //     } else {
+  //       Alert.alert('Error', loginResult.message || 'Login failed. Please try again.');
+  //     }
+
+  //   } catch (err) {
+  //     console.log('OTP Error:', err);
+  //     setError('Invalid OTP. Please try again.');
+  //     setOtp(['', '', '', '', '', '']);
+  //     inputs.current[0]?.focus();
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  const verifyOTP = async (otpCode) => {
   if (!confirm) {
     setError('Session expired. Please go back and try again.');
     return;
@@ -33,11 +82,13 @@ const verifyOTP = async (otpCode) => {
     setLoading(true);
     setError('');
 
-    
+    // Step 1: Verify Firebase OTP
     await confirm.confirm(otpCode);
-    console.log('OTP verified successfully');
+    console.log('✅ Firebase OTP verified');
 
-    
+    // Step 2: Check mobile number in backend
+    console.log('📞 Checking mobile no:', mobileNo); // 👈 check what's being sent
+
     const loginResponse = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -45,21 +96,29 @@ const verifyOTP = async (otpCode) => {
     });
 
     const loginResult = await loginResponse.json();
+    console.log('📦 Backend response:', JSON.stringify(loginResult)); // 👈 see full response
 
     if (loginResult.success) {
-      navigation.navigate('Whichcity', {
-        mobileNo,
-        token,
-      });
+      if (loginResult.isRegistered === true) {
+        console.log('✅ Existing user → DutyDashboard');
+        await AsyncStorage.setItem('token', loginResult.token);
+        navigation.replace('DutyDashboard');
+      } else {
+        console.log('🆕 New user → Whichcity');
+        navigation.navigate('Whichcity', {
+          mobileNo,
+          token: loginResult.token ?? token,
+        });
+      }
     } else {
-      Alert.alert('Error', loginResult.message);
+      Alert.alert('Error', loginResult.message || 'Login failed. Please try again.');
     }
 
   } catch (err) {
-    console.log('OTP Error:', err);
+    console.log('❌ OTP Error:', err);
     setError('Invalid OTP. Please try again.');
     setOtp(['', '', '', '', '', '']);
-    inputs.current[0].focus();
+    inputs.current[0]?.focus();
   } finally {
     setLoading(false);
   }
@@ -73,7 +132,7 @@ const verifyOTP = async (otpCode) => {
     setOtp(newOtp);
 
     if (text && index < 5) {
-      inputs.current[index + 1].focus();
+      inputs.current[index + 1]?.focus();
     }
 
     if (index === 5 && text) {
@@ -84,7 +143,7 @@ const verifyOTP = async (otpCode) => {
 
   const handleBackspace = (key, index) => {
     if (key === 'Backspace' && otp[index] === '' && index > 0) {
-      inputs.current[index - 1].focus();
+      inputs.current[index - 1]?.focus();
     }
   };
 

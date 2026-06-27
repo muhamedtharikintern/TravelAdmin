@@ -29,6 +29,7 @@ const LanguageSelectionScreen = ({ navigation }) => {
       <View style={styles.topContainer}>
          <Image
                source={require('../assets/logo.png')}
+               style={{ width: 206, height: 134 }}
                resizeMode="contain"
                />
       </View>

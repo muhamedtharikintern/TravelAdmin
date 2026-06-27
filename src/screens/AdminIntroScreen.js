@@ -1,40 +1,60 @@
 import React, { useEffect } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   StatusBar,
-  Image
+  Image,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const AdminIntroScreen = ({ navigation }) => {
 
-  // Auto navigate after 2.5s (optional)
   useEffect(() => {
-    const timer = setTimeout(() => {
-      navigation.replace('LocationPermission'); // change to your next screen
-    }, 2500);
-
-    return () => clearTimeout(timer);
+    checkLoginStatus();
   }, []);
+
+  const checkLoginStatus = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+
+      setTimeout(() => {
+        if (token) {
+          console.log('User already logged in:', token);
+
+          // User is logged in
+          navigation.navigate('DutyDashboard'); // or Home screen
+        } else {
+          console.log('No token found');
+
+          // User is not logged in
+          navigation.navigate('LanguageSelection'); // Login screen
+        }
+      }, 2500);
+
+    } catch (error) {
+      console.log('Error reading token:', error);
+
+      navigation.replace('ContactDetails');
+    }
+  };
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#147A78" />
 
-      {/* LOGO BLOCK */}
       <View style={styles.logoContainer}>
-
-       <Image
-       source={require('../assets/logo.png')}
-       resizeMode="contain"
-       />
+        <Image
+          source={require('../assets/logo.png')}
+          style={{ width: 206, height: 134 }}
+          resizeMode="contain"
+        />
       </View>
     </View>
   );
 };
 
 export default AdminIntroScreen;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -44,8 +64,9 @@ const styles = StyleSheet.create({
   },
 
   logoContainer: {
+    width:206,
+    height:134,
     alignItems: 'center',
-    transform: [{ translateY: 60 }], // 🔥 pushes slightly below center like design
   },
 
   logoRow: {
@@ -60,7 +81,6 @@ const styles = StyleSheet.create({
     fontWeight: '300',
     letterSpacing: 2,
   },
-
   car: {
     fontSize: 36,
     marginLeft: 6,

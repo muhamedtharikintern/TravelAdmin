@@ -8,8 +8,28 @@ import {
   Image,
 } from "react-native";
 import Icon from "react-native-vector-icons/Feather";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Alert } from 'react-native';
 
-export default function SettingsScreen({ navigation }) {
+export default function SettingsScreen({ navigation,token }) {
+
+  const handleLogout = () => {
+  Alert.alert(
+    'Logout',
+    'Are you sure you want to logout?',
+    [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Logout',
+        style: 'destructive',
+        onPress: async () => {
+          await AsyncStorage.removeItem('token');
+          navigation.replace('LanguageSelection'); // your login screen name
+        },
+      },
+    ]
+  );
+};
   const general = [
     {
       title: "Profile",
@@ -57,28 +77,21 @@ export default function SettingsScreen({ navigation }) {
     },
   ];
 
-  const renderItem = (item, index) => (
-    <TouchableOpacity key={index} style={styles.row}>
+const renderItem = (item, index) => (
+  <TouchableOpacity
+    key={index}
+    style={styles.row}
+    onPress={item.title === 'Logout' ? handleLogout : undefined}
+  >
     <Image source={item.icon} style={styles.icon} />
-
-      <View style={{ flex: 1 }}>
-        <Text
-          style={[
-            styles.title,
-            item.danger && { color: "red" },
-          ]}
-        >
-          {item.title}
-        </Text>
-
-        {item.sub !== "" && (
-          <Text style={styles.sub}>{item.sub}</Text>
-        )}
-      </View>
-
-      
-    </TouchableOpacity>
-  );
+    <View style={{ flex: 1 }}>
+      <Text style={[styles.title, item.danger && { color: 'red' }]}>
+        {item.title}
+      </Text>
+      {item.sub !== '' && <Text style={styles.sub}>{item.sub}</Text>}
+    </View>
+  </TouchableOpacity>
+);
 
   return (
     <View style={styles.container}>
