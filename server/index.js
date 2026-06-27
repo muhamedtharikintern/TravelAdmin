@@ -3,18 +3,18 @@ import http from "http";
 import { Server } from "socket.io";
 import app from "./src/app.js";
 import { connectToDatabase } from "./db.js";
+
 dotenv.config();
 
 const port = parseInt(process.env.PORT || "4000", 10);
 const server = http.createServer(app);
-
 const io = new Server(server, {
   cors: { origin: "*" }
 });
 
 app.set("io", io);
 
-const connectedCaptains = {};
+const connectedCaptains = {};  // { captainId: { socketId, vehicleType } }
 const connectedUsers = {};
 
 io.on("connection", (socket) => {
@@ -25,9 +25,11 @@ io.on("connection", (socket) => {
     console.log("User registered:", userId);
   });
 
-  socket.on("captain:register", (captainId) => {
-    connectedCaptains[captainId] = socket.id;
-    console.log("Captain registered:", captainId);
+  // ✅ Fix 1: Store vehicleType with captainId
+  socket.on("captain:register", ({ captainId, vehicleType }) => {
+    connectedCaptains[captainId] = { socketId: socket.id, vehicleType };
+    console.log(`✅ Captain registered: ${captainId} | vehicleType: ${vehicleType}`);
+    console.log("All captains:", JSON.stringify(connectedCaptains));
   });
 
   socket.on("join_order", (orderId) => {
@@ -38,16 +40,39 @@ io.on("connection", (socket) => {
   socket.on("user:book_order", async (orderData) => {
     try {
       const { customerId, pickupLocation, dropLocation, vehicleType, amount, distance } = orderData;
+
+      console.log(`📦 New order | vehicleType: ${vehicleType}`);
+      console.log("Connected captains:", JSON.stringify(connectedCaptains));
+
       const Order = (await import("./src/models/order.js")).default;
       const order = await Order.create({
         customerId, pickupLocation, dropLocation,
         vehicleType, amount, distance, status: "pending",
       });
-      io.emit("captain:new_order", {
-        orderId: order._id, customerId,
-        pickupLocation, dropLocation, vehicleType, amount, distance,
-      });
+
+      // ✅ Fix 2: Send only to captains with matching vehicleType
+      let sentCount = 0;
+      for (const [captainId, captain] of Object.entries(connectedCaptains)) {
+        console.log(`Checking captain ${captainId}: ${captain.vehicleType} === ${vehicleType}?`);
+        if (captain.vehicleType === vehicleType) {
+          io.to(captain.socketId).emit("captain:new_order", {
+            orderId: order._id,
+            customerId,
+            pickupLocation,
+            dropLocation,
+            vehicleType,
+            amount,
+            distance,
+          });
+          sentCount++;
+          console.log(`✅ Order sent to captain: ${captainId} (${captain.vehicleType})`);
+        }
+      }
+
+      console.log(`📨 Order sent to ${sentCount} captain(s)`);
+
       socket.emit("user:order_created", { success: true, orderId: order._id });
+
     } catch (error) {
       console.log("Order error:", error);
       socket.emit("user:order_created", { success: false, message: "Order failed" });
@@ -84,8 +109,8 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    for (const [captainId, socketId] of Object.entries(connectedCaptains)) {
-      if (socketId === socket.id) {
+    for (const [captainId, captain] of Object.entries(connectedCaptains)) {
+      if (captain.socketId === socket.id) {
         delete connectedCaptains[captainId];
         console.log("Captain disconnected:", captainId);
       }
