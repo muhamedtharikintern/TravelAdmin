@@ -21,7 +21,7 @@ const OrderPage = ({ navigation, route }) => {
         const token = await AsyncStorage.getItem('token');
 
         // Step 1: Fetch captain profile to get vehicleType
-        const res = await fetch('https://traveladmin.duckdns.org/auth/profile', {
+        const res = await fetch('https://traveladmin.duckdns.org/auth/me', {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
