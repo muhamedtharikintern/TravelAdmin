@@ -6,6 +6,7 @@ import {
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import storage from '@react-native-firebase/storage';
 import Feather from 'react-native-vector-icons/Feather';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const PermitUpload = ({ navigation, route }) => {
   const API_URL = 'https://traveladmin.duckdns.org';
@@ -49,6 +50,17 @@ const PermitUpload = ({ navigation, route }) => {
 
     try {
       setLoading(true);
+
+      // ✅ Always get token from AsyncStorage
+      const token = await AsyncStorage.getItem('token');
+      console.log('🔑 Token:', token);
+
+      if (!token) {
+        Alert.alert('Error', 'Session expired. Please login again.');
+        navigation.reset({ index: 0, routes: [{ name: 'ContactDetails' }] });
+        return;
+      }
+
       setUploading(true);
       const permitUrl = await uploadToFirebase(image);
       setUploading(false);
@@ -66,7 +78,7 @@ const PermitUpload = ({ navigation, route }) => {
 
       if (result.success) {
         Alert.alert('Success', 'Permit uploaded successfully!');
-        navigation.navigate('VehicleInsuranceUpload', { mobileNo, token }); // ✅ pass params
+        navigation.navigate('VehicleInsuranceUpload', { mobileNo }); // ✅ pass params
       } else {
         Alert.alert('Error', result.message || 'Something went wrong');
       }

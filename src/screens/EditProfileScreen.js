@@ -10,11 +10,11 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const EditProfileScreen = ({ navigation, route }) => {
   const API_URL = 'https://traveladmin.duckdns.org';
   const mobileNo = route?.params?.mobileNo;
-  const token = route?.params?.token;
 
   const [gender, setGender] = useState('male');
   const [fullName, setFullName] = useState('');
@@ -23,7 +23,6 @@ const EditProfileScreen = ({ navigation, route }) => {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
 
-  // ✅ Fetch user profile (including selfie) on mount
   useEffect(() => {
     fetchProfile();
   }, []);
@@ -31,6 +30,17 @@ const EditProfileScreen = ({ navigation, route }) => {
   const fetchProfile = async () => {
     try {
       setFetching(true);
+
+      // ✅ Get token from AsyncStorage
+      const token = await AsyncStorage.getItem('token');
+      console.log('🔑 Token:', token);
+
+      if (!token) {
+        Alert.alert('Error', 'Session expired. Please login again.');
+        navigation.reset({ index: 0, routes: [{ name: 'ContactDetails' }] });
+        return;
+      }
+
       const response = await fetch(`${API_URL}/auth/me`, {
         method: 'GET',
         headers: {
@@ -38,18 +48,19 @@ const EditProfileScreen = ({ navigation, route }) => {
           Authorization: `Bearer ${token}`,
         },
       });
+
       const result = await response.json();
-      console.log('Profile:', JSON.stringify(result));
+      console.log('👤 Profile:', JSON.stringify(result));
 
       if (result.success) {
         const user = result.user;
         setFullName(user.fullName || '');
         setDob(user.DOB || '');
         setGender(user.gender || 'male');
-        setSelfieUrl(user.selfieUrl || null); // ✅ selfie URL from MongoDB
+        setSelfieUrl(user.selfieUrl || null);
       }
     } catch (err) {
-      console.log('Fetch profile error:', err);
+      console.log('❌ Fetch profile error:', err);
     } finally {
       setFetching(false);
     }
@@ -64,8 +75,20 @@ const EditProfileScreen = ({ navigation, route }) => {
       Alert.alert('Error', 'Please enter your date of birth');
       return;
     }
+
     try {
       setLoading(true);
+
+      // ✅ Get token from AsyncStorage
+      const token = await AsyncStorage.getItem('token');
+      console.log('🔑 Token:', token);
+
+      if (!token) {
+        Alert.alert('Error', 'Session expired. Please login again.');
+        navigation.reset({ index: 0, routes: [{ name: 'ContactDetails' }] });
+        return;
+      }
+
       const response = await fetch(`${API_URL}/auth/edit-profile`, {
         method: 'POST',
         headers: {
@@ -80,15 +103,16 @@ const EditProfileScreen = ({ navigation, route }) => {
       });
 
       const result = await response.json();
-      console.log('Edit profile result:', JSON.stringify(result));
+      console.log('✅ Edit profile result:', JSON.stringify(result));
 
       if (result.success) {
-        navigation.navigate('VehicleDetails', { mobileNo, token });
+        navigation.navigate('VehicleDetails', { mobileNo });
       } else {
         Alert.alert('Error', result.message || 'Something went wrong');
       }
+
     } catch (err) {
-      console.log('Submit error:', err);
+      console.log('❌ Submit error:', err);
       Alert.alert('Error', 'Failed to update profile. Please try again.');
     } finally {
       setLoading(false);
@@ -117,7 +141,7 @@ const EditProfileScreen = ({ navigation, route }) => {
             source={
               selfieUrl
                 ? { uri: selfieUrl }
-                : require('../assets/user.png') // fallback placeholder
+                : require('../assets/user.png')
             }
             style={styles.profileImage}
           />
@@ -131,7 +155,7 @@ const EditProfileScreen = ({ navigation, route }) => {
           <View style={[styles.corner, styles.bottomRight]} />
         </View>
 
-        <TouchableOpacity onPress={() => navigation.navigate('TakeSelfie', { mobileNo, token })}>
+        <TouchableOpacity onPress={() => navigation.navigate('TakeSelfie', { mobileNo })}>
           <Text style={styles.editPhotoText}>Edit Profile Photo</Text>
         </TouchableOpacity>
       </View>
@@ -160,7 +184,6 @@ const EditProfileScreen = ({ navigation, route }) => {
             style={styles.input}
             value={dob}
             onChangeText={(text) => {
-              // Auto-format DD-MM-YYYY
               const cleaned = text.replace(/[^0-9]/g, '');
               let formatted = cleaned;
               if (cleaned.length >= 3 && cleaned.length <= 4)

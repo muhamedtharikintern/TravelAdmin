@@ -30,14 +30,24 @@ const OrderPage = ({ navigation, route }) => {
         console.log('🚗 Captain vehicleType:', captainVehicleType);
         setVehicleType(captainVehicleType);
 
-        // Step 2: Register with socket including vehicleType
         const socket = getSocket();
-        socket.emit("captain:register", { captainId, vehicleType: captainVehicleType });
-        console.log('✅ Captain registered with socket');
 
-        // Step 3: Listen for orders matching vehicleType
+        // Step 2: ✅ Wait for connection before registering
+        const doRegister = () => {
+          socket.emit("captain:register", { captainId, vehicleType: captainVehicleType });
+          console.log('✅ Captain registered | vehicleType:', captainVehicleType);
+          console.log('🔌 Socket ID:', socket.id);
+        };
+
+        if (socket.connected) {
+          doRegister(); // ✅ Already connected — register immediately
+        } else {
+          socket.once('connect', doRegister); // ⏳ Wait for connection then register
+        }
+
+        // Step 3: Listen for incoming orders
         const newOrderHandler = (incomingOrder) => {
-          console.log("📦 New order received:", incomingOrder);
+          console.log("📦 New order received:", JSON.stringify(incomingOrder));
           setOrder(incomingOrder);
           setWaiting(false);
         };
@@ -46,6 +56,7 @@ const OrderPage = ({ navigation, route }) => {
 
         return () => {
           socket.off("captain:new_order", newOrderHandler);
+          socket.off('connect', doRegister);
         };
 
       } catch (err) {
@@ -89,6 +100,7 @@ const OrderPage = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.container}>
+
       {/* HEADER */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
@@ -118,6 +130,7 @@ const OrderPage = ({ navigation, route }) => {
       {/* ORDER CARD */}
       {order && (
         <View style={styles.card}>
+
           {/* CLOSE BUTTON */}
           <TouchableOpacity style={styles.closeBtn} onPress={handleReject}>
             <Image
@@ -160,8 +173,10 @@ const OrderPage = ({ navigation, route }) => {
               : <Text style={styles.acceptText}>Accept</Text>
             }
           </TouchableOpacity>
+
         </View>
       )}
+
     </SafeAreaView>
   );
 };

@@ -10,12 +10,12 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import storage from '@react-native-firebase/storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ConfirmSelfieScreen = ({ navigation, route }) => {
   const API_URL = 'https://traveladmin.duckdns.org';
   const mobileNo = route?.params?.mobileNo;
-  const token = route?.params?.token;
-  const selfieUri = route?.params?.selfieUri; // local path from TakeSelfie
+  const selfieUri = route?.params?.selfieUri;
 
   const [uploading, setUploading] = useState(false);
 
@@ -27,12 +27,23 @@ const ConfirmSelfieScreen = ({ navigation, route }) => {
     try {
       setUploading(true);
 
-      // ✅ Upload to Firebase
+      // ✅ Always get token from AsyncStorage
+      const token = await AsyncStorage.getItem('token');
+      console.log('🔑 Token:', token);
+
+      if (!token) {
+        Alert.alert('Error', 'Session expired. Please login again.');
+        navigation.reset({ index: 0, routes: [{ name: 'ContactDetails' }] });
+        return;
+      }
+
+      // Upload to Firebase
       const reference = storage().ref(`selfies/selfie_${mobileNo}_${Date.now()}.jpg`);
       await reference.putFile(selfieUri);
       const selfieURL = await reference.getDownloadURL();
+      console.log('✅ Selfie uploaded to Firebase:', selfieURL);
 
-      // ✅ Save URL to MongoDB
+      // Save URL to MongoDB
       const response = await fetch(`${API_URL}/auth/upload-selfie`, {
         method: 'POST',
         headers: {
@@ -46,15 +57,17 @@ const ConfirmSelfieScreen = ({ navigation, route }) => {
       });
 
       const result = await response.json();
+      console.log('✅ Selfie save result:', result);
 
       if (result.success) {
         Alert.alert('Success', 'Selfie uploaded successfully!');
-        navigation.navigate('EditProfile', { mobileNo, token,selfieUri});
+        navigation.navigate('EditProfile', { mobileNo });
       } else {
         Alert.alert('Error', result.message || 'Something went wrong');
       }
+
     } catch (err) {
-      console.log('Upload error:', err);
+      console.log('❌ Upload error:', err);
       Alert.alert('Error', 'Failed to upload. Please try again.');
     } finally {
       setUploading(false);
@@ -72,7 +85,7 @@ const ConfirmSelfieScreen = ({ navigation, route }) => {
         <Text style={styles.title}>Selfie</Text>
       </View>
 
-      {/* SELFIE PREVIEW — captured image */}
+      {/* SELFIE PREVIEW */}
       <View style={styles.previewContainer}>
         <Image
           source={{ uri: selfieUri ? `file://${selfieUri}` : null }}
@@ -101,7 +114,7 @@ const ConfirmSelfieScreen = ({ navigation, route }) => {
       <View style={styles.actions}>
         <TouchableOpacity
           style={[styles.retakeBtn, uploading && { opacity: 0.5 }]}
-          onPress={() => navigation.navigate('TakeSelfie', { mobileNo, token })}
+          onPress={() => navigation.navigate('TakeSelfie', { mobileNo })}
           disabled={uploading}
         >
           <Text style={styles.retakeText}>Retake</Text>
@@ -128,8 +141,6 @@ export default ConfirmSelfieScreen;
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F6F6F6', paddingHorizontal: 20 },
-
-  /* HEADER */
   header: { alignItems: 'center', marginTop: 10 },
   backIcon: { width: 40, height: 40, resizeMode: 'contain' },
   backBtn: {
@@ -138,15 +149,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#EAEAEA', justifyContent: 'center', alignItems: 'center',
   },
   title: { fontSize: 20, fontWeight: '600', color: '#3A3A3A' },
-
-  /* PREVIEW */
   previewContainer: {
     marginTop: 30, height: 598,
     borderRadius: 6, overflow: 'hidden', backgroundColor: '#DDD',
   },
   image: { width: '100%', height: 598 },
-
-  /* FACE FRAME */
   faceFrame: {
     position: 'absolute', top: '20%', left: '15%', width: '70%', height: '60%',
   },
@@ -155,16 +162,12 @@ const styles = StyleSheet.create({
   topRight:    { top: 0,    right: 0, borderTopWidth: 3,    borderRightWidth: 3 },
   bottomLeft:  { bottom: 0, left: 0,  borderBottomWidth: 3, borderLeftWidth: 3  },
   bottomRight: { bottom: 0, right: 0, borderBottomWidth: 3, borderRightWidth: 3 },
-
-  /* UPLOAD OVERLAY */
   uploadingOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.55)',
     justifyContent: 'center', alignItems: 'center',
   },
   uploadingText: { color: '#FFF', marginTop: 10, fontSize: 15, fontWeight: '500' },
-
-  /* ACTIONS */
   actions: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 40 },
   retakeBtn: {
     width: '48%', paddingVertical: 16, borderRadius: 30,

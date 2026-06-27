@@ -13,13 +13,12 @@ import {
 } from 'react-native';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import storage from '@react-native-firebase/storage';
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const DriverLicenseScreen = ({ navigation, route }) => {
-  const API_URL ="https://traveladmin.duckdns.org";
-  
+  const API_URL = "https://traveladmin.duckdns.org";
+
   const mobileNo = route?.params?.mobileNo;
-  const token = route?.params?.token;
 
   const [frontImage, setFrontImage] = useState(null);
   const [backImage, setBackImage] = useState(null);
@@ -99,41 +98,55 @@ const DriverLicenseScreen = ({ navigation, route }) => {
     try {
       setLoading(true);
 
+      // ✅ Always get token from AsyncStorage
+      const token = await AsyncStorage.getItem('token');
+      console.log('🔑 Token:', token);
+
+      if (!token) {
+        Alert.alert('Error', 'Session expired. Please login again.');
+        navigation.reset({ index: 0, routes: [{ name: 'ContactDetails' }] });
+        return;
+      }
+
       // Upload front image to Firebase
       setUploadingFront(true);
       const frontURL = await uploadToFirebase(frontImage, `front_${mobileNo}`);
       setUploadingFront(false);
+      console.log('✅ Front uploaded:', frontURL);
 
       // Upload back image to Firebase
       setUploadingBack(true);
       const backURL = await uploadToFirebase(backImage, `back_${mobileNo}`);
       setUploadingBack(false);
+      console.log('✅ Back uploaded:', backURL);
 
-      // ✅ Save to MongoDB - matching your schema fields exactly
+      // Save to MongoDB
       const response = await fetch(`${API_URL}/auth/upload-license`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json',
-                  Authorization: `Bearer ${token}`
-         },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
-          mobileNo: mobileNo,                  
-          drivingLicenceFront: frontURL,        
-          drivingLicenceBack: backURL,          
-          drivingLicenceNo: licenseNumber,      
+          mobileNo,
+          drivingLicenceFront: frontURL,
+          drivingLicenceBack: backURL,
+          drivingLicenceNo: licenseNumber,
         }),
       });
 
       const result = await response.json();
+      console.log('✅ License upload result:', result);
 
       if (result.success) {
         Alert.alert('Success', 'License uploaded successfully!');
-        navigation.navigate('TakeSelfie', { mobileNo,token });
+        navigation.navigate('TakeSelfie', { mobileNo });
       } else {
         Alert.alert('Error', result.message || 'Something went wrong');
       }
 
     } catch (error) {
-      console.log('Submit error:', error);
+      console.log('❌ Submit error:', error);
       Alert.alert('Error', 'Failed to upload. Please try again.');
     } finally {
       setLoading(false);
@@ -227,6 +240,7 @@ const DriverLicenseScreen = ({ navigation, route }) => {
 
       </ScrollView>
 
+      {/* SUBMIT BUTTON */}
       <TouchableOpacity
         style={[styles.button, loading && { opacity: 0.6 }]}
         onPress={handleSubmit}

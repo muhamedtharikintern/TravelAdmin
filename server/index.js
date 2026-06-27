@@ -37,47 +37,52 @@ io.on("connection", (socket) => {
     console.log("Joined order room:", orderId);
   });
 
-  socket.on("user:book_order", async (orderData) => {
-    try {
-      const { customerId, pickupLocation, dropLocation, vehicleType, amount, distance } = orderData;
+socket.on("user:book_order", async (orderData) => {
+  try {
+    const { customerId, pickupLocation, dropLocation, vehicleType, amount, distance } = orderData;
 
-      console.log(`📦 New order | vehicleType: ${vehicleType}`);
-      console.log("Connected captains:", JSON.stringify(connectedCaptains));
+    console.log(`📦 New order vehicleType: "${vehicleType}"`);
+    console.log("Connected captains:", JSON.stringify(connectedCaptains));
 
-      const Order = (await import("./src/models/order.js")).default;
-      const order = await Order.create({
-        customerId, pickupLocation, dropLocation,
-        vehicleType, amount, distance, status: "pending",
-      });
+    const Order = (await import("./src/models/order.js")).default;
+    const order = await Order.create({
+      customerId, pickupLocation, dropLocation,
+      vehicleType, amount, distance, status: "pending",
+    });
 
-      // ✅ Fix 2: Send only to captains with matching vehicleType
-      let sentCount = 0;
-      for (const [captainId, captain] of Object.entries(connectedCaptains)) {
-        console.log(`Checking captain ${captainId}: ${captain.vehicleType} === ${vehicleType}?`);
-        if (captain.vehicleType === vehicleType) {
-          io.to(captain.socketId).emit("captain:new_order", {
-            orderId: order._id,
-            customerId,
-            pickupLocation,
-            dropLocation,
-            vehicleType,
-            amount,
-            distance,
-          });
-          sentCount++;
-          console.log(`✅ Order sent to captain: ${captainId} (${captain.vehicleType})`);
-        }
+    let sentCount = 0;
+    for (const [captainId, captain] of Object.entries(connectedCaptains)) {
+      console.log(`Checking: captain="${captainId}" | captain.vehicleType="${captain.vehicleType}" | order.vehicleType="${vehicleType}"`);
+
+      // ✅ Case-insensitive + trim comparison
+      const captainVehicle = captain.vehicleType?.toLowerCase().trim();
+      const orderVehicle = vehicleType?.toLowerCase().trim();
+
+      if (captainVehicle === orderVehicle) {
+        io.to(captain.socketId).emit("captain:new_order", {
+          orderId: order._id,
+          customerId,
+          pickupLocation,
+          dropLocation,
+          vehicleType,
+          amount,
+          distance,
+        });
+        sentCount++;
+        console.log(`✅ Sent to captain: ${captainId}`);
+      } else {
+        console.log(`❌ Skipped captain: ${captainId} | "${captainVehicle}" !== "${orderVehicle}"`);
       }
-
-      console.log(`📨 Order sent to ${sentCount} captain(s)`);
-
-      socket.emit("user:order_created", { success: true, orderId: order._id });
-
-    } catch (error) {
-      console.log("Order error:", error);
-      socket.emit("user:order_created", { success: false, message: "Order failed" });
     }
-  });
+
+    console.log(`📨 Order sent to ${sentCount} captain(s)`);
+    socket.emit("user:order_created", { success: true, orderId: order._id });
+
+  } catch (error) {
+    console.log("Order error:", error);
+    socket.emit("user:order_created", { success: false, message: "Order failed" });
+  }
+});
 
   socket.on("captain:accept_order", async ({ orderId, captainId }) => {
     try {

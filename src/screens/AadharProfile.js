@@ -6,11 +6,11 @@ import {
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import storage from '@react-native-firebase/storage';
 import Feather from 'react-native-vector-icons/Feather';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const AadharProfile = ({ navigation, route }) => {
   const API_URL = 'https://traveladmin.duckdns.org';
   const mobileNo = route?.params?.mobileNo;
-  const token = route?.params?.token;
 
   const [selected, setSelected] = useState('aadhar');
   const [image, setImage] = useState(null);
@@ -47,7 +47,6 @@ const AadharProfile = ({ navigation, route }) => {
     return await reference.getDownloadURL();
   };
 
-  // Clear number when switching ID type
   const handleSelectType = (type) => {
     setSelected(type);
     setIdNumber('');
@@ -56,10 +55,8 @@ const AadharProfile = ({ navigation, route }) => {
 
   const validateNumber = () => {
     if (selected === 'aadhar') {
-      // Aadhaar: exactly 12 digits
       return /^\d{12}$/.test(idNumber);
     } else {
-      // PAN: AAAAA9999A format
       return /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(idNumber);
     }
   };
@@ -82,9 +79,21 @@ const AadharProfile = ({ navigation, route }) => {
 
     try {
       setLoading(true);
+
+      // ✅ Always get token from AsyncStorage
+      const token = await AsyncStorage.getItem('token');
+      console.log('🔑 Token:', token);
+
+      if (!token) {
+        Alert.alert('Error', 'Session expired. Please login again.');
+        navigation.reset({ index: 0, routes: [{ name: 'ContactDetails' }] });
+        return;
+      }
+
       setUploading(true);
       const idUrl = await uploadToFirebase(image);
       setUploading(false);
+      console.log('✅ ID proof uploaded:', idUrl);
 
       const response = await fetch(`${API_URL}/auth/upload-id-proof`, {
         method: 'POST',
@@ -93,22 +102,24 @@ const AadharProfile = ({ navigation, route }) => {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          idType: selected,   // 'aadhar' or 'pan'
+          idType: selected,
           idUrl,
           idNumber,
         }),
       });
 
       const result = await response.json();
+      console.log('✅ ID proof save result:', result);
 
       if (result.success) {
         Alert.alert('Success', 'ID proof uploaded successfully!');
-        navigation.navigate('PermitUpload', { mobileNo, token }); // ✅ pass params
+        navigation.navigate('PermitUpload', { mobileNo });
       } else {
         Alert.alert('Error', result.message || 'Something went wrong');
       }
+
     } catch (error) {
-      console.log('Submit error:', error);
+      console.log('❌ Submit error:', error);
       Alert.alert('Error', 'Failed to upload. Please try again.');
     } finally {
       setLoading(false);
@@ -176,10 +187,8 @@ const AadharProfile = ({ navigation, route }) => {
           value={idNumber}
           onChangeText={(text) => {
             if (selected === 'aadhar') {
-              // Only digits, max 12
               setIdNumber(text.replace(/[^0-9]/g, '').slice(0, 12));
             } else {
-              // Uppercase alphanumeric, max 10
               setIdNumber(text.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10));
             }
           }}

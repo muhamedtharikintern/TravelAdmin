@@ -7,20 +7,32 @@ import {
   SafeAreaView,
   Image,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const API_URL = "https://traveladmin.duckdns.org";
 
-const RideOrPorterScreen = ({ navigation,route}) => {
+const RideOrPorterScreen = ({ navigation, route }) => {
   const [selected, setSelected] = useState('RIDE');
   const [loading, setLoading] = useState(false);
 
-  const mobileNo = route?.params?.mobileNo; 
-  const token = route?.params?.token;
+  const mobileNo = route?.params?.mobileNo;
 
   const handleConfirm = async () => {
     try {
       setLoading(true);
+
+      // ✅ Always get token from AsyncStorage
+      const token = await AsyncStorage.getItem('token');
+      console.log('🔑 Token:', token);
+      console.log('🚗 Selected service:', selected);
+
+      if (!token) {
+        Alert.alert('Error', 'Session expired. Please login again.');
+        navigation.reset({ index: 0, routes: [{ name: 'ContactDetails' }] });
+        return;
+      }
 
       const response = await fetch(`${API_URL}/auth/update-service`, {
         method: 'POST',
@@ -32,51 +44,50 @@ const RideOrPorterScreen = ({ navigation,route}) => {
       });
 
       const result = await response.json();
-      console.log('Service update:', result);
+      console.log('✅ Service update result:', result);
 
       if (result.success) {
         navigation.navigate('DriverLicense', {
-          mobileNo, 
-          token,    
+          mobileNo,
         });
       } else {
         Alert.alert('Error', result.message || 'Failed to update service');
       }
 
     } catch (error) {
-      console.log(error);
+      console.log('❌ Error:', error);
       Alert.alert('Error', error.message);
     } finally {
       setLoading(false);
     }
   };
 
-
   return (
     <SafeAreaView style={styles.container}>
 
       {/* BACK BUTTON */}
       <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Image
-            source={require('../assets/back.png')}
-            style={styles.backIcon}
-          />
+        <Image
+          source={require('../assets/back.png')}
+          style={styles.backIcon}
+        />
       </TouchableOpacity>
 
       {/* TITLE */}
-      <Text style={styles.title}>Choose Service’s</Text>
+      <Text style={styles.title}>Choose Service's</Text>
 
       {/* OPTIONS */}
       <View style={styles.optionsContainer}>
 
         {/* RIDE */}
         <TouchableOpacity
-          style={styles.optionCard}
+          style={[styles.optionCard, selected === 'RIDE' && styles.optionCardSelected]}
           activeOpacity={0.8}
           onPress={() => setSelected('RIDE')}
         >
-          <Text style={styles.optionText}>RIDE</Text>
-
+          <Text style={[styles.optionText, selected === 'RIDE' && styles.optionTextSelected]}>
+            RIDE
+          </Text>
           <View style={[styles.radioOuter, selected === 'RIDE' && styles.radioActive]}>
             {selected === 'RIDE' && <View style={styles.radioInner} />}
           </View>
@@ -84,12 +95,13 @@ const RideOrPorterScreen = ({ navigation,route}) => {
 
         {/* PORTER */}
         <TouchableOpacity
-          style={styles.optionCard}
+          style={[styles.optionCard, selected === 'PORTER' && styles.optionCardSelected]}
           activeOpacity={0.8}
           onPress={() => setSelected('PORTER')}
         >
-          <Text style={styles.optionText}>PORTER</Text>
-
+          <Text style={[styles.optionText, selected === 'PORTER' && styles.optionTextSelected]}>
+            PORTER
+          </Text>
           <View style={[styles.radioOuter, selected === 'PORTER' && styles.radioActive]}>
             {selected === 'PORTER' && <View style={styles.radioInner} />}
           </View>
@@ -98,9 +110,15 @@ const RideOrPorterScreen = ({ navigation,route}) => {
       </View>
 
       {/* CTA BUTTON */}
-      <TouchableOpacity style={styles.button}
-      onPress={handleConfirm }>
-        <Text style={styles.buttonText}>Confirm Service’s</Text>
+      <TouchableOpacity
+        style={[styles.button, loading && { opacity: 0.7 }]}
+        onPress={handleConfirm}
+        disabled={loading}
+      >
+        {loading
+          ? <ActivityIndicator color="#fff" />
+          : <Text style={styles.buttonText}>Confirm Service's</Text>
+        }
       </TouchableOpacity>
 
     </SafeAreaView>
@@ -115,14 +133,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#F6F6F6',
     paddingHorizontal: 20,
   },
-
   backIcon: {
-  width: 40,
-  height: 40,
-  resizeMode: 'contain',
-},
-
-  /* BACK */
+    width: 40,
+    height: 40,
+    resizeMode: 'contain',
+  },
   backBtn: {
     marginTop: 10,
     width: 44,
@@ -132,8 +147,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-
-  /* TITLE */
   title: {
     textAlign: 'center',
     fontSize: 20,
@@ -141,14 +154,11 @@ const styles = StyleSheet.create({
     color: '#3A3A3A',
     marginTop: -30,
   },
-
-  /* OPTIONS */
   optionsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 60,
   },
-
   optionCard: {
     width: '48%',
     height: 90,
@@ -156,21 +166,23 @@ const styles = StyleSheet.create({
     borderWidth: 1.2,
     borderColor: '#BDBDBD',
     backgroundColor: '#F6F6F6',
-
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-
     paddingHorizontal: 20,
   },
-
+  optionCardSelected: {
+    borderColor: '#117A7A',
+    backgroundColor: '#F0FAFA',
+  },
   optionText: {
     fontSize: 20,
     fontWeight: '700',
     color: '#2E2E2E',
   },
-
-  /* RADIO */
+  optionTextSelected: {
+    color: '#117A7A',
+  },
   radioOuter: {
     width: 26,
     height: 26,
@@ -180,19 +192,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-
   radioActive: {
     borderColor: '#117A7A',
   },
-
   radioInner: {
     width: 12,
     height: 12,
     borderRadius: 6,
     backgroundColor: '#117A7A',
   },
-
-  /* BUTTON */
   button: {
     position: 'absolute',
     bottom: 30,
@@ -202,14 +210,12 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
     borderRadius: 30,
     alignItems: 'center',
-
     shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },
     elevation: 3,
   },
-
   buttonText: {
     color: '#FFFFFF',
     fontSize: 18,

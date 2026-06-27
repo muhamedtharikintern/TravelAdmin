@@ -9,8 +9,10 @@ import {
 } from 'react-native';
 
 
+
 const DutyDashboard = ({navigation}) => {
   const [isOnDuty, setIsOnDuty] = useState(false);
+
 
   const toggleSwitch = () => {
     setIsOnDuty(!isOnDuty);

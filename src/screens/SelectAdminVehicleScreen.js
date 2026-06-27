@@ -6,13 +6,13 @@ import {
   TouchableOpacity,
   SafeAreaView,
   FlatList,
-  Alert, 
+  Alert,
   Image,
   ActivityIndicator,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const API_URL = "https://traveladmin.duckdns.org";
-
 
 const VEHICLES = [
   { id: '1', title: 'Bike', subtitle: 'Bike Taxi & Delivery', icon: require('../assets/bike.png') },
@@ -29,106 +29,91 @@ const VEHICLES = [
   { id: '12', title: '17ft', subtitle: 'Delivery, etc', icon: require('../assets/truck2.png') },
 ];
 
-const SelectadminVehicleScreen = ({ navigation, route}) => {
+const SelectadminVehicleScreen = ({ navigation, route }) => {
   const [selected, setSelected] = useState('1');
   const [loading, setLoading] = useState(false);
 
   const mobileNo = route?.params?.mobileNo;
-  const token = route?.params?.token;
 
- const handleConfirm = async () => {
-  const selectedVehicle = VEHICLES.find(
-    v => v.id === selected
-  );
+  const handleConfirm = async () => {
+    const selectedVehicle = VEHICLES.find(v => v.id === selected);
 
-  if (!selectedVehicle) {
-    Alert.alert(
-      'Error',
-      'Please select a vehicle'
-    );
-    return;
-  }
+    if (!selectedVehicle) {
+      Alert.alert('Error', 'Please select a vehicle');
+      return;
+    }
 
-  try {
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    const response = await fetch(
-      `${API_URL}/auth/update-vehicle`,
-      {
+      // ✅ Always get token from AsyncStorage
+      const token = await AsyncStorage.getItem('token');
+      console.log('🔑 Token:', token);
+      console.log('🚗 Selected vehicle:', selectedVehicle.title);
+
+      if (!token) {
+        Alert.alert('Error', 'Session expired. Please login again.');
+        navigation.reset({ index: 0, routes: [{ name: 'ContactDetails' }] });
+        return;
+      }
+
+      const response = await fetch(`${API_URL}/auth/update-vehicle`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          vehicleType:selectedVehicle.title,
-        }),
+        body: JSON.stringify({ vehicleType: selectedVehicle.title }),
+      });
+
+      const result = await response.json();
+      console.log('✅ Update vehicle response:', result);
+
+      if (result.success) {
+        navigation.navigate('RideOrPorter', {
+          vehicleType: selectedVehicle.title,
+          mobileNo,
+        });
+      } else {
+        Alert.alert('Error', result.message || 'Failed to update vehicle');
       }
-    );
 
-    const result =
-      await response.json();
-
-    console.log(
-      'Update vehicle response:',result
-    );
-
-    if (result.success) {
-      navigation.navigate(
-        'RideOrPorter',
-        {
-          vehicleType:selectedVehicle.title,
-          mobileNo,   
-          token,
-        }
-      );
-    } else {
-      Alert.alert(
-        'Error',
-        result.message ||
-          'Failed to update vehicle'
-      );
+    } catch (error) {
+      console.log('❌ Error:', error);
+      Alert.alert('Error', error.message);
+    } finally {
+      setLoading(false);
     }
-
-  } catch (error) {
-    console.log('Error:', error);
-
-    Alert.alert(
-      'Error',
-      error.message
-    );
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const renderItem = ({ item }) => {
     const isSelected = selected === item.id;
 
     return (
       <TouchableOpacity
-        style={styles.row}
+        style={[styles.row, isSelected && styles.selectedRow]}
         activeOpacity={0.7}
         onPress={() => setSelected(item.id)}
       >
         {/* ICON */}
-        <View style={styles.iconWrapper}>
+        <View style={[styles.iconWrapper, isSelected && styles.selectedIconWrapper]}>
           <Image source={item.icon} style={styles.icon} />
         </View>
 
         {/* TEXT */}
         <View style={styles.textContainer}>
-          <Text style={[
-            styles.title,
-            isSelected && styles.selectedTitle
-          ]}>
+          <Text style={[styles.title, isSelected && styles.selectedTitle]}>
             {item.title}
           </Text>
-
-          <Text style={styles.subtitle}>
-            {item.subtitle}
-          </Text>
+          <Text style={styles.subtitle}>{item.subtitle}</Text>
         </View>
+
+        {/* ✅ Checkmark for selected */}
+        {isSelected && (
+          <View style={styles.checkMark}>
+            <Text style={styles.checkText}>✓</Text>
+          </View>
+        )}
       </TouchableOpacity>
     );
   };
@@ -142,12 +127,11 @@ const SelectadminVehicleScreen = ({ navigation, route}) => {
           style={styles.backBtn}
           onPress={() => navigation.goBack()}
         >
-            <Image
-            source={require('../assets/back.png')} 
+          <Image
+            source={require('../assets/back.png')}
             style={styles.backIcon}
           />
         </TouchableOpacity>
-
         <Text style={styles.headerTitle}>Select Vehicle</Text>
       </View>
 
@@ -162,9 +146,15 @@ const SelectadminVehicleScreen = ({ navigation, route}) => {
 
       {/* BUTTON */}
       <View style={styles.bottomContainer}>
-        <TouchableOpacity style={styles.confirmBtn}
-        onPress={handleConfirm}>
-          <Text style={styles.confirmText}>Confirm Vehicle</Text>
+        <TouchableOpacity
+          style={[styles.confirmBtn, loading && { opacity: 0.7 }]}
+          onPress={handleConfirm}
+          disabled={loading}
+        >
+          {loading
+            ? <ActivityIndicator color="#fff" />
+            : <Text style={styles.confirmText}>Confirm Vehicle</Text>
+          }
         </TouchableOpacity>
       </View>
 
@@ -178,21 +168,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5',
-    marginTop:20,
+    marginTop: 20,
   },
-
-  /* HEADER */
   header: {
     alignItems: 'center',
     marginTop: 10,
     marginBottom: 10,
   },
-
   backIcon: {
-  width: 40,
-  height: 40,
-  resizeMode: 'contain',
-},
+    width: 40,
+    height: 40,
+    resizeMode: 'contain',
+  },
   backBtn: {
     position: 'absolute',
     left: 20,
@@ -203,21 +190,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-
   headerTitle: {
     fontSize: 20,
     fontWeight: '600',
     color: '#333',
   },
-
-  /* ROW */
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 14,
+    borderRadius: 12,
+    marginHorizontal: 10,
+    marginVertical: 2,
   },
-
+  selectedRow: {
+    backgroundColor: '#F0FAFA',
+  },
   iconWrapper: {
     width: 64,
     height: 64,
@@ -225,48 +214,58 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-
     shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },
     elevation: 4,
   },
-
+  selectedIconWrapper: {
+    backgroundColor: '#E6F7F7',
+    borderWidth: 1,
+    borderColor: '#117A7A',
+  },
   icon: {
     width: 38,
     height: 38,
     resizeMode: 'contain',
   },
-
   textContainer: {
     marginLeft: 16,
+    flex: 1,
   },
-
   title: {
     fontSize: 20,
     fontWeight: '600',
     color: '#333',
   },
-
   selectedTitle: {
     color: '#117A7A',
   },
-
   subtitle: {
     fontSize: 15,
     color: '#666',
     marginTop: 2,
   },
-
-  /* BUTTON */
+  checkMark: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#117A7A',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
   bottomContainer: {
     position: 'absolute',
     bottom: 20,
     width: '100%',
     paddingHorizontal: 20,
   },
-
   confirmBtn: {
     height: 56,
     backgroundColor: '#117A7A',
@@ -274,7 +273,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-
   confirmText: {
     color: '#fff',
     fontSize: 18,

@@ -16,7 +16,6 @@ import {
 
 const TakeSelfieScreen = ({ navigation, route }) => {
   const mobileNo = route?.params?.mobileNo;
-  const token = route?.params?.token;
 
   const camera = useRef(null);
   const { hasPermission, requestPermission } = useCameraPermission();
@@ -35,10 +34,9 @@ const TakeSelfieScreen = ({ navigation, route }) => {
     try {
       const photo = await camera.current.takePhoto({ flash: 'off' });
 
-      // ✅ Just pass the local path to ConfirmSelfie — no upload here
+      // ✅ Pass local path to ConfirmSelfie — no token needed here
       navigation.navigate('ConfirmSelfie', {
         mobileNo,
-        token,
         selfieUri: photo.path,
       });
     } catch (err) {

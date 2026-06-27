@@ -6,11 +6,11 @@ import {
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import storage from '@react-native-firebase/storage';
 import Feather from 'react-native-vector-icons/Feather';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const VehicleDetailsScreen = ({ navigation, route }) => {
   const API_URL = 'https://traveladmin.duckdns.org';
   const mobileNo = route?.params?.mobileNo;
-  const token = route?.params?.token;
 
   const [frontImage, setFrontImage] = useState(null);
   const [backImage, setBackImage] = useState(null);
@@ -19,7 +19,6 @@ const VehicleDetailsScreen = ({ navigation, route }) => {
   const [uploadingFront, setUploadingFront] = useState(false);
   const [uploadingBack, setUploadingBack] = useState(false);
 
-  // ✅ Same pattern as DL screen
   const pickImage = (side) => {
     Alert.alert('Upload Photo', 'Choose an option', [
       { text: 'Camera',  onPress: () => openCamera(side) },
@@ -44,7 +43,6 @@ const VehicleDetailsScreen = ({ navigation, route }) => {
     });
   };
 
-  // ✅ Same Firebase upload function as DL screen
   const uploadToFirebase = async (uri, filename) => {
     const reference = storage().ref(`rc/${filename}_${Date.now()}.jpg`);
     await reference.putFile(uri);
@@ -60,13 +58,25 @@ const VehicleDetailsScreen = ({ navigation, route }) => {
     try {
       setLoading(true);
 
+      // ✅ Always get token from AsyncStorage
+      const token = await AsyncStorage.getItem('token');
+      console.log('🔑 Token:', token);
+
+      if (!token) {
+        Alert.alert('Error', 'Session expired. Please login again.');
+        navigation.reset({ index: 0, routes: [{ name: 'ContactDetails' }] });
+        return;
+      }
+
       setUploadingFront(true);
       const frontURL = await uploadToFirebase(frontImage, `RC_front_${mobileNo}`);
       setUploadingFront(false);
+      console.log('✅ RC Front uploaded:', frontURL);
 
       setUploadingBack(true);
       const backURL = await uploadToFirebase(backImage, `RC_back_${mobileNo}`);
       setUploadingBack(false);
+      console.log('✅ RC Back uploaded:', backURL);
 
       const response = await fetch(`${API_URL}/auth/upload-rcdetails`, {
         method: 'POST',
@@ -82,15 +92,17 @@ const VehicleDetailsScreen = ({ navigation, route }) => {
       });
 
       const result = await response.json();
+      console.log('✅ RC upload result:', result);
 
       if (result.success) {
         Alert.alert('Success', 'RC uploaded successfully!');
-        navigation.navigate('AadharProfile', { mobileNo, token }); 
+        navigation.navigate('AadharProfile', { mobileNo });
       } else {
         Alert.alert('Error', result.message || 'Something went wrong');
       }
+
     } catch (error) {
-      console.log('Submit error:', error);
+      console.log('❌ Submit error:', error);
       Alert.alert('Error', 'Failed to upload. Please try again.');
     } finally {
       setLoading(false);
