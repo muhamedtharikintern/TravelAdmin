@@ -179,5 +179,26 @@ router.post('/user-login', async (req, res) => {
   }
 });
 
+router.get("/user-me", authMiddleware, async (req, res) => {
+  try {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+
+    const user = await User.findById(req.userId).select("-password");
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      user,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ success: false, message: "Server Error" });
+  }
+});
 
 export default router;
