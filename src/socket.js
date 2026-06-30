@@ -23,26 +23,30 @@ export const getSocket = () => {
 export const registerCaptainSocket = async (captainId) => {
   try {
     const token = await AsyncStorage.getItem("token");
-
-    // ✅ Correct endpoint is /auth/me not /auth/profile
     const res = await fetch("https://traveladmin.duckdns.org/auth/me", {
       headers: { Authorization: `Bearer ${token}` },
     });
     const data = await res.json();
-
-    console.log("👤 Profile response:", JSON.stringify(data));
-
     const vehicleType = data.user?.vehicleType;
     console.log("🚗 Captain vehicleType:", vehicleType);
 
     const socket = getSocket();
-    socket.emit("captain:register", { captainId, vehicleType });
-    console.log("✅ Captain registered with socket | vehicleType:", vehicleType);
 
-    return vehicleType;
+    const doRegister = () => {
+      socket.emit("captain:register", { captainId, vehicleType });
+      console.log("✅ Captain registered with socket | vehicleType:", vehicleType);
+    };
+
+    if (socket.connected) {
+      doRegister();
+    } else {
+      socket.once("connect", doRegister);
+    }
+
+    return { socket, vehicleType };
   } catch (err) {
     console.log("❌ registerCaptainSocket error:", err);
-    return null;
+    return { socket: null, vehicleType: null };
   }
 };
 

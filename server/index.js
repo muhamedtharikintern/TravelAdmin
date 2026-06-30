@@ -3,6 +3,7 @@ import http from "http";
 import { Server } from "socket.io";
 import app from "./src/app.js";
 import { connectToDatabase } from "./db.js";
+import { notifyCaptainsOfNewOrder } from "./src/utils/notifyCaptains.js";
 
 dotenv.config();
 
@@ -14,8 +15,11 @@ const io = new Server(server, {
 
 app.set("io", io);
 
-const connectedCaptains = {};  // { captainId: { socketId, vehicleType } }
-const connectedUsers = {};
+const connectedCaptains = {}; // { captainId: { socketId, vehicleType } }
+const connectedUsers = {};   // { userId: socketId }
+
+app.set("connectedCaptains", connectedCaptains);
+app.set("connectedUsers", connectedUsers);
 
 io.on("connection", (socket) => {
   console.log("New connection:", socket.id);
@@ -25,7 +29,6 @@ io.on("connection", (socket) => {
     console.log("User registered:", userId);
   });
 
-  // ✅ Fix 1: Store vehicleType with captainId
   socket.on("captain:register", ({ captainId, vehicleType }) => {
     connectedCaptains[captainId] = { socketId: socket.id, vehicleType };
     console.log(`✅ Captain registered: ${captainId} | vehicleType: ${vehicleType}`);
@@ -37,52 +40,26 @@ io.on("connection", (socket) => {
     console.log("Joined order room:", orderId);
   });
 
-socket.on("user:book_order", async (orderData) => {
-  try {
-    const { customerId, pickupLocation, dropLocation, vehicleType, amount, distance } = orderData;
+  // Optional: socket-based order creation (if you ever use it instead of REST)
+  socket.on("user:book_order", async (orderData) => {
+    try {
+      const { customerId, pickupLocation, dropLocation, vehicleType, amount, distance } = orderData;
 
-    console.log(`📦 New order vehicleType: "${vehicleType}"`);
-    console.log("Connected captains:", JSON.stringify(connectedCaptains));
+      const Order = (await import("./src/models/order.js")).default;
+      const order = await Order.create({
+        userId: customerId,
+        pickupLocation, dropLocation,
+        vehicleType, amount, distance, status: "pending",
+      });
 
-    const Order = (await import("./src/models/order.js")).default;
-    const order = await Order.create({
-      customerId, pickupLocation, dropLocation,
-      vehicleType, amount, distance, status: "pending",
-    });
+      notifyCaptainsOfNewOrder(io, connectedCaptains, order);
 
-    let sentCount = 0;
-    for (const [captainId, captain] of Object.entries(connectedCaptains)) {
-      console.log(`Checking: captain="${captainId}" | captain.vehicleType="${captain.vehicleType}" | order.vehicleType="${vehicleType}"`);
-
-      // ✅ Case-insensitive + trim comparison
-      const captainVehicle = captain.vehicleType?.toLowerCase().trim();
-      const orderVehicle = vehicleType?.toLowerCase().trim();
-
-      if (captainVehicle === orderVehicle) {
-        io.to(captain.socketId).emit("captain:new_order", {
-          orderId: order._id,
-          customerId,
-          pickupLocation,
-          dropLocation,
-          vehicleType,
-          amount,
-          distance,
-        });
-        sentCount++;
-        console.log(`✅ Sent to captain: ${captainId}`);
-      } else {
-        console.log(`❌ Skipped captain: ${captainId} | "${captainVehicle}" !== "${orderVehicle}"`);
-      }
+      socket.emit("user:order_created", { success: true, orderId: order._id });
+    } catch (error) {
+      console.log("Order error:", error);
+      socket.emit("user:order_created", { success: false, message: "Order failed" });
     }
-
-    console.log(`📨 Order sent to ${sentCount} captain(s)`);
-    socket.emit("user:order_created", { success: true, orderId: order._id });
-
-  } catch (error) {
-    console.log("Order error:", error);
-    socket.emit("user:order_created", { success: false, message: "Order failed" });
-  }
-});
+  });
 
   socket.on("captain:accept_order", async ({ orderId, captainId }) => {
     try {

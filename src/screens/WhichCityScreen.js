@@ -93,7 +93,7 @@ const WhichCityScreen = ({ navigation, route }) => {
             <Text style={styles.cityText}>Chennai</Text>
           </View>
 
-          <TouchableOpacity onPress={() => navigation.navigate('searchcity')}>
+          <TouchableOpacity onPress={() => navigation.navigate('searchcity',{ mobileNo})}>
             <Text style={styles.changeText}>CHANGE</Text>
           </TouchableOpacity>
         </View>
