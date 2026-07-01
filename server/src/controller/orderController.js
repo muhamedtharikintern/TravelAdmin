@@ -4,12 +4,12 @@ import { notifyCaptainsOfNewOrder } from "../utils/notifyCaptains.js";
 export const createOrder = async (req, res) => {
   try {
     const order = await Order.create(req.body);
-
     const io = req.app.get("io");
-    const connectedCaptains = req.app.get("connectedCaptains");
+
+    const getAllCaptains = req.app.get("getAllCaptains");
+    const connectedCaptains = await getAllCaptains(); // fetch fresh from Redis
 
     notifyCaptainsOfNewOrder(io, connectedCaptains, order);
-
     res.status(201).json({ success: true, order });
   } catch (err) {
     console.error("❌ createOrder error:", err);
@@ -21,13 +21,10 @@ export const addTip = async (req, res) => {
   try {
     const { orderId } = req.params;
     const { tip } = req.body;
-
     const order = await Order.findByIdAndUpdate(orderId, { tip }, { new: true });
-
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
     }
-
     res.status(200).json(order);
   } catch (err) {
     console.error("❌ addTip error:", err);
@@ -39,11 +36,9 @@ export const getOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
     const order = await Order.findById(orderId);
-
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
     }
-
     res.status(200).json(order);
   } catch (err) {
     console.error("❌ getOrder error:", err);
@@ -54,17 +49,14 @@ export const getOrder = async (req, res) => {
 export const acceptOrder = async (req, res) => {
   try {
     const { orderId, captainId } = req.body;
-
     if (!orderId || !captainId) {
       return res.status(400).json({ success: false, message: "orderId and captainId required" });
     }
 
     const order = await Order.findById(orderId);
-
     if (!order) {
       return res.status(404).json({ success: false, message: "Order not found" });
     }
-
     if (order.status !== "pending") {
       return res.status(409).json({ success: false, message: "Order already taken" });
     }
@@ -74,9 +66,10 @@ export const acceptOrder = async (req, res) => {
     await order.save();
 
     const io = req.app.get("io");
-    const connectedUsers = req.app.get("connectedUsers");
 
-    const userSocketId = connectedUsers[String(order.userId)];
+    const getUserSocketId = req.app.get("getUserSocketId");
+    const userSocketId = await getUserSocketId(String(order.userId)); // fetch from Redis
+
     if (userSocketId) {
       io.to(userSocketId).emit("user:order_accepted", {
         orderId: order._id,
