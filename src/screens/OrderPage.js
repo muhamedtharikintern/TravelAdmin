@@ -4,11 +4,11 @@ import {
   SafeAreaView, Image, ActivityIndicator, Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { registerCaptainSocket } from '../socket';
 
 const OrderPage = ({ navigation, route }) => {
-  const captainId = route.params?.captainId || "CAPTAIN_ID_HERE";
-
+  const [captainId, setCaptainId] = useState(route.params?.captainId || null);
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [waiting, setWaiting] = useState(true);
@@ -18,7 +18,45 @@ const OrderPage = ({ navigation, route }) => {
     let activeSocket = null;
 
     const setup = async () => {
-      const { socket, vehicleType: vt } = await registerCaptainSocket(captainId);
+      // Resolve real captain ID if it wasn't passed via route.params
+      let resolvedCaptainId = captainId;
+
+      if (!resolvedCaptainId) {
+        resolvedCaptainId = await AsyncStorage.getItem("captainId");
+      }
+
+      if (!resolvedCaptainId) {
+        const token = await AsyncStorage.getItem("token");
+        if (!token) {
+          Alert.alert("Session expired", "Please log in again.");
+          navigation.navigate("CaptainLogin");
+          return;
+        }
+
+        try {
+          const res = await fetch("https://traveladmin.duckdns.org/auth/me", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const data = await res.json();
+
+          if (!data?.user?._id) {
+            Alert.alert("Session expired", "Please log in again.");
+            navigation.navigate("CaptainLogin");
+            return;
+          }
+
+          resolvedCaptainId = data.user._id;
+          await AsyncStorage.setItem("captainId", resolvedCaptainId); // cache for next time
+        } catch (err) {
+          console.log("❌ Failed to fetch captain profile:", err);
+          Alert.alert("Error", "Could not verify your account. Please check your connection.");
+          return;
+        }
+      }
+
+      setCaptainId(resolvedCaptainId);
+
+      const { socket, vehicleType: vt } = await registerCaptainSocket(resolvedCaptainId);
       if (!socket) return;
 
       activeSocket = socket;
@@ -40,10 +78,10 @@ const OrderPage = ({ navigation, route }) => {
         activeSocket.off("captain:new_order");
       }
     };
-  }, [captainId]);
+  }, []);
 
   const handleAccept = async () => {
-    if (!order) return;
+    if (!order || !captainId) return;
     setLoading(true);
     try {
       const response = await fetch("https://traveladmin.duckdns.org/order/accept-order", {
