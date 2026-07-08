@@ -13,11 +13,22 @@ const OrderPage = ({ navigation, route }) => {
   const [loading, setLoading] = useState(false);
   const [waiting, setWaiting] = useState(true);
   const [vehicleType, setVehicleType] = useState(null);
+  const [isOnDuty, setIsOnDuty] = useState(null); // null = still checking
 
   useEffect(() => {
     let activeSocket = null;
 
     const setup = async () => {
+      // ✅ Check duty status first
+      const dutyStatus = await AsyncStorage.getItem("isOnDuty");
+      const onDuty = dutyStatus === "true";
+      setIsOnDuty(onDuty);
+
+      if (!onDuty) {
+        // Don't connect to socket or listen for orders at all
+        return;
+      }
+
       // Resolve real captain ID if it wasn't passed via route.params
       let resolvedCaptainId = captainId;
 
@@ -46,7 +57,7 @@ const OrderPage = ({ navigation, route }) => {
           }
 
           resolvedCaptainId = data.user._id;
-          await AsyncStorage.setItem("captainId", resolvedCaptainId); // cache for next time
+          await AsyncStorage.setItem("captainId", resolvedCaptainId);
         } catch (err) {
           console.log("❌ Failed to fetch captain profile:", err);
           Alert.alert("Error", "Could not verify your account. Please check your connection.");
@@ -123,25 +134,46 @@ const OrderPage = ({ navigation, route }) => {
           <Image source={require('../assets/back.png')} style={styles.backIcon} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
-          {waiting ? "Waiting for Orders..." : "1 Order"}
+          {isOnDuty === false ? "Off Duty" : waiting ? "Waiting for Orders..." : "1 Order"}
         </Text>
         <View style={{ width: 40 }} />
       </View>
 
-      {vehicleType && (
+      {/* ✅ Off-duty message */}
+      {isOnDuty === false && (
+        <View style={styles.waitingBox}>
+          <Image
+            source={require('../assets/ride.jpg')}
+            style={{ width: 160, height: 160, opacity: 0.6 }}
+            resizeMode="contain"
+          />
+          <Text style={styles.offDutyTitle}>You're currently off duty</Text>
+          <Text style={styles.offDutySubtext}>
+            Please go on duty to start receiving orders.
+          </Text>
+          <TouchableOpacity
+            style={styles.goOnDutyBtn}
+            onPress={() => navigation.navigate("DutyDashboard")}
+          >
+            <Text style={styles.goOnDutyText}>Go On Duty</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {isOnDuty && vehicleType && (
         <View style={styles.vehicleBadge}>
           <Text style={styles.vehicleBadgeText}>🚗 {vehicleType}</Text>
         </View>
       )}
 
-      {waiting && (
+      {isOnDuty && waiting && (
         <View style={styles.waitingBox}>
           <ActivityIndicator size="large" color="#117A7A" />
           <Text style={styles.waitingText}>Looking for new orders...</Text>
         </View>
       )}
 
-      {order && (
+      {isOnDuty && order && (
         <View style={styles.card}>
           <TouchableOpacity style={styles.closeBtn} onPress={handleReject}>
             <Image
@@ -206,8 +238,15 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: '#117A7A',
   },
   vehicleBadgeText: { color: '#117A7A', fontWeight: '600', fontSize: 13 },
-  waitingBox: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 16 },
+  waitingBox: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 16, paddingHorizontal: 30 },
   waitingText: { fontSize: 16, color: '#666', fontWeight: '500' },
+  offDutyTitle: { fontSize: 20, fontWeight: '700', color: '#333', textAlign: 'center' },
+  offDutySubtext: { fontSize: 15, color: '#777', textAlign: 'center', marginTop: -8 },
+  goOnDutyBtn: {
+    marginTop: 10, backgroundColor: '#117A7A', paddingVertical: 14,
+    paddingHorizontal: 40, borderRadius: 999,
+  },
+  goOnDutyText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
   card: {
     backgroundColor: '#FFFFFF', marginHorizontal: 16, marginTop: 24,
     borderRadius: 20, padding: 20, borderWidth: 2, borderColor: '#16A34A', elevation: 3,

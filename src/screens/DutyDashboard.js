@@ -6,44 +6,85 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Image,
+  Alert,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { registerCaptainSocket, setCaptainOffDuty } from '../socket';
 
-
-
-const DutyDashboard = ({navigation}) => {
+const DutyDashboard = ({ navigation }) => {
   const [isOnDuty, setIsOnDuty] = useState(false);
 
+  const toggleSwitch = async () => {
+    const newState = !isOnDuty;
+    setIsOnDuty(newState);
+    await AsyncStorage.setItem("isOnDuty", newState ? "true" : "false"); // ✅ persist for OrderPage to read
 
-  const toggleSwitch = () => {
-    setIsOnDuty(!isOnDuty);
+    let captainId = await AsyncStorage.getItem("captainId");
+
+    if (!captainId) {
+      const token = await AsyncStorage.getItem("token");
+      if (!token) {
+        Alert.alert("Session expired", "Please log in again.");
+        setIsOnDuty(false);
+        await AsyncStorage.setItem("isOnDuty", "false");
+        return;
+      }
+      try {
+        const res = await fetch("https://traveladmin.duckdns.org/auth/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (!data?.user?._id) {
+          Alert.alert("Session expired", "Please log in again.");
+          setIsOnDuty(false);
+          await AsyncStorage.setItem("isOnDuty", "false");
+          return;
+        }
+        captainId = data.user._id;
+        await AsyncStorage.setItem("captainId", captainId);
+      } catch (err) {
+        console.log("❌ Failed to fetch captain profile:", err);
+        Alert.alert("Error", "Could not go on duty. Please try again.");
+        setIsOnDuty(false);
+        await AsyncStorage.setItem("isOnDuty", "false");
+        return;
+      }
+    }
+
+    if (newState) {
+      // ✅ Register as available BEFORE navigating
+      await registerCaptainSocket(captainId);
+      navigation.navigate("OnDutyDashboard");
+    } else {
+      // ✅ Explicitly mark off-duty so backend stops sending orders
+      setCaptainOffDuty(captainId);
+    }
   };
 
   return (
     <SafeAreaView style={styles.container}>
 
       {/* TOP BAR */}
-           <View style={styles.topBar}>
-                 <TouchableOpacity
-                 onPress={() => navigation.navigate('AdminProfile')}>
-                   <Image
-                     source={require('../assets/menu.png')}   
-                     style={styles.icon}
-                   />
-                 </TouchableOpacity>
-     
-                 <TouchableOpacity
-                 onPress={() => navigation.navigate('AdminNotification')}>
-                    <Image
-                       source={require('../assets/bell.png')}  
-                       style={styles.icon}
-                     />
-                 </TouchableOpacity>
-             </View>
+      <View style={styles.topBar}>
+        <TouchableOpacity onPress={() => navigation.navigate('AdminProfile')}>
+          <Image
+            source={require('../assets/menu.png')}
+            style={styles.icon}
+          />
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => navigation.navigate('AdminNotification')}>
+          <Image
+            source={require('../assets/bell.png')}
+            style={styles.icon}
+          />
+        </TouchableOpacity>
+      </View>
 
       {/* TOGGLE SECTION */}
       <View style={styles.toggleWrapper}>
         <View style={styles.toggleContainer}>
-          
+
           {/* TEXT */}
           <Text style={styles.toggleText}>
             {isOnDuty ? 'ON DUTY' : 'OFF DUTY'}
@@ -56,14 +97,7 @@ const DutyDashboard = ({navigation}) => {
               styles.switch,
               isOnDuty && styles.switchActive,
             ]}
-            onPress={() => {
-                  const newState = !isOnDuty;
-                  setIsOnDuty(newState);
-
-                  if (newState) {
-                    navigation.navigate("OnDutyDashboard");
-                  }
-                }}
+            onPress={toggleSwitch}
           >
             <View
               style={[
@@ -85,7 +119,7 @@ const DutyDashboard = ({navigation}) => {
       {/* ILLUSTRATION */}
       <View style={styles.imageContainer}>
         <Image
-          source={require('../assets/ride.jpg')} // replace with your asset
+          source={require('../assets/ride.jpg')}
           style={styles.image}
           resizeMode="contain"
         />
@@ -95,20 +129,20 @@ const DutyDashboard = ({navigation}) => {
       <View style={styles.bottomNav}>
         <View style={styles.navItem}>
           <TouchableOpacity>
-          <Image
-            source={require('../assets/home_black.png')}  
-            style={styles.icon}
-          />
+            <Image
+              source={require('../assets/home_black.png')}
+              style={styles.icon}
+            />
           </TouchableOpacity>
         </View>
 
         <View style={styles.navItem}>
           <TouchableOpacity
-          onPress={()=> navigation.navigate("OrderPage")}>
-          <Image
-            source={require('../assets/order.png')}  
-            style={styles.icon}
-          />
+            onPress={() => navigation.navigate("OrderPage")}>
+            <Image
+              source={require('../assets/order.png')}
+              style={styles.icon}
+            />
           </TouchableOpacity>
         </View>
       </View>
@@ -159,10 +193,10 @@ const styles = StyleSheet.create({
   },
 
   icon: {
-  width: 32,
-  height: 32,
-  resizeMode: 'contain',
-},
+    width: 32,
+    height: 32,
+    resizeMode: 'contain',
+  },
 
   /* SWITCH TRACK */
   switch: {
