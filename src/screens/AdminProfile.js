@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,24 +7,76 @@ import {
   SafeAreaView,
   ScrollView,
   Image,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const API_URL = 'https://traveladmin.duckdns.org';
 
 const AdminProfile = ({ navigation }) => {
-  const [isOnDuty, setIsOnDuty] = useState(false);
+  const [fullName, setFullName] = useState('');
+  const [mobileNo, setMobileNo] = useState('');
+  const [selfieUrl, setSelfieUrl] = useState(null);
+  const [fetching, setFetching] = useState(true);
 
   const menuItems = [
-    { icon: require('../assets/help.png'), label: 'Help',screen :"Help" },
-    { icon: require('../assets/wallet.png'), label: 'Wallets',screen :"Wallet" },
-    { icon: require('../assets/myrides.png'), label: 'My Rides',screen :"RideHistory" },
+    { icon: require('../assets/help.png'), label: 'Help', screen: "Help" },
+    { icon: require('../assets/wallet.png'), label: 'Wallets', screen: "Wallet" },
+    { icon: require('../assets/myrides.png'), label: 'My Rides', screen: "RideHistory" },
     { icon: require('../assets/safety.png'), label: 'Safety', screen: "SafetyToolkit" },
-    { icon: require('../assets/refer.png'), label: 'Refer and Earn',screen: "ReferFriends" },
+    { icon: require('../assets/refer.png'), label: 'Refer and Earn', screen: "ReferFriends" },
     { icon: require('../assets/rewards.png'), label: 'My Rewards', screen: "Rewards" },
     { icon: require('../assets/powerpass.png'), label: 'Power Pass', screen: "PowerPass" },
     { icon: require('../assets/not.png'), label: 'Notifications', screen: "Notifications" },
     { icon: require('../assets/claims.png'), label: 'Claims', screen: "ClaimInsurance" },
-    { icon: require('../assets/settings.png'), label: 'Settings', screen:"Settings" },
+    { icon: require('../assets/settings.png'), label: 'Settings', screen: "Settings" },
   ];
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    try {
+      setFetching(true);
+
+      const token = await AsyncStorage.getItem('token');
+      console.log('🔑 Token:', token);
+
+      if (!token) {
+        Alert.alert('Session expired', 'Please log in again.');
+        navigation.reset({ index: 0, routes: [{ name: 'ContactDetails' }] });
+        return;
+      }
+
+      const response = await fetch(`${API_URL}/auth/me`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const result = await response.json();
+      console.log('👤 Profile:', JSON.stringify(result));
+
+      if (result.success) {
+        const user = result.user;
+        setFullName(user.fullName || '');
+        setMobileNo(user.mobileNo || '');
+        setSelfieUrl(user.selfieUrl || null);
+      } else {
+        Alert.alert('Error', 'Could not load your profile.');
+      }
+    } catch (err) {
+      console.log('❌ Fetch profile error:', err);
+      Alert.alert('Network Error', 'Something went wrong. Please check your connection.');
+    } finally {
+      setFetching(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -33,11 +85,11 @@ const AdminProfile = ({ navigation }) => {
         {/* HEADER */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn}
-          onPress={()=> navigation.goBack()}>
-             <Image
-            source={require('../assets/back.png')} 
-            style={styles.backIcon}
-          />
+            onPress={() => navigation.goBack()}>
+            <Image
+              source={require('../assets/back.png')}
+              style={styles.backIcon}
+            />
           </TouchableOpacity>
 
           <Text style={styles.headerTitle}>Profile</Text>
@@ -47,26 +99,38 @@ const AdminProfile = ({ navigation }) => {
 
         {/* PROFILE CARD */}
         <View style={styles.card}>
-          
+
           {/* USER INFO */}
           <View style={styles.row}>
-            <Image
-                source={require('../assets/user.png')}
-                style={styles.icon}
+            {fetching ? (
+              <View style={styles.avatarPlaceholder}>
+                <ActivityIndicator color="#117A7A" size="small" />
+              </View>
+            ) : (
+              <Image
+                source={
+                  selfieUrl
+                    ? { uri: selfieUrl }
+                    : require('../assets/user.png')
+                }
+                style={styles.avatar}
               />
+            )}
             <View style={styles.userInfo}>
               <TouchableOpacity
-              onPress={()=> navigation.navigate("AdminEditProfile")}>
-              <Text style={styles.userName}>John Wick</Text>
-              <Text style={styles.userPhone}>6625025660</Text>
+                onPress={() => navigation.navigate("AdminEditProfile")}>
+                <Text style={styles.userName}>
+                  {fetching ? 'Loading...' : (fullName || 'Add your name')}
+                </Text>
+                <Text style={styles.userPhone}>{mobileNo}</Text>
               </TouchableOpacity>
             </View>
-               <Image
-                    source={require('../assets/r2.png')}
-                    style={styles.icon}
-                  />
+            <Image
+              source={require('../assets/r2.png')}
+              style={styles.icon}
+            />
           </View>
-          
+
 
           {/* DIVIDER */}
           <View style={styles.divider} />
@@ -74,14 +138,14 @@ const AdminProfile = ({ navigation }) => {
           {/* RATING */}
           <View style={styles.row}>
             <Image
-                  source={require('../assets/star.png')}
-                  style={[styles.icon, { tintColor: '#F4A100' }]} 
-                />
+              source={require('../assets/star.png')}
+              style={[styles.icon, { tintColor: '#F4A100' }]}
+            />
             <Text style={styles.ratingText}>5.00 My Rating</Text>
-               <Image
-                    source={require('../assets/r2.png')}
-                    style={styles.icon}
-                  />
+            <Image
+              source={require('../assets/r2.png')}
+              style={styles.icon}
+            />
           </View>
         </View>
 
@@ -90,15 +154,15 @@ const AdminProfile = ({ navigation }) => {
           {menuItems.map((item, index) => (
             <View key={index}>
               <TouchableOpacity style={styles.menuItem}
-              onPress={()=> navigation.navigate(item.screen)}>
+                onPress={() => navigation.navigate(item.screen)}>
                 <View style={styles.menuLeft}>
                   <Image source={item.icon} style={styles.icon} />
                   <Text style={styles.menuText}>{item.label}</Text>
                 </View>
                 <Image
-                    source={require('../assets/r2.png')}
-                    style={styles.icon}
-                  />
+                  source={require('../assets/r2.png')}
+                  style={styles.icon}
+                />
               </TouchableOpacity>
 
               {/* DIVIDER */}
@@ -121,14 +185,14 @@ const AdminProfile = ({ navigation }) => {
           </View>
 
           <Image
-            source={require('../assets/captain.png')} 
+            source={require('../assets/captain.png')}
             style={styles.bannerImage}
           />
         </View>
 
       </ScrollView>
 
-  
+
     </SafeAreaView>
   );
 };
@@ -151,16 +215,31 @@ const styles = StyleSheet.create({
   },
 
   backIcon: {
-  width: 40,
-  height: 40,
-  resizeMode: 'contain',
-},
+    width: 40,
+    height: 40,
+    resizeMode: 'contain',
+  },
 
-icon: {
-  width: 24,
-  height: 24,
-  resizeMode: 'contain',
-},
+  icon: {
+    width: 24,
+    height: 24,
+    resizeMode: 'contain',
+  },
+
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+  },
+
+  avatarPlaceholder: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#E0E0E0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 
   backBtn: {
     width: 44,
