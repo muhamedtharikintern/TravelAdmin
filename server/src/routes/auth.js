@@ -66,15 +66,13 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    const user = await User.findOne({ mobileNo });
+    let user = await User.findOne({ mobileNo });
+    let isRegistered = true;
 
     if (!user) {
-      // 🆕 New user — don't return error, return isRegistered: false
-      return res.status(200).json({
-        success: true,
-        isRegistered: false,
-        token: null,
-      });
+      // 🆕 New user — create a minimal shell record so we can issue a token
+      user = await User.create({ mobileNo });
+      isRegistered = false;
     }
 
     const token = jwt.sign(
@@ -85,8 +83,8 @@ router.post("/login", async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      isRegistered: true,   // ✅ existing user
-      message: "Login Success",
+      isRegistered,
+      message: isRegistered ? "Login Success" : "New user, token issued",
       token,
       user,
     });
