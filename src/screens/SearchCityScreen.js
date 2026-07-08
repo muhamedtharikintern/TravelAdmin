@@ -8,9 +8,13 @@ import {
   TextInput,
   ScrollView,
   Image,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import Feather from 'react-native-vector-icons/Feather';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const API_URL = "https://traveladmin.duckdns.org";
 
 const citiesData = [
   'Chennai',
@@ -28,23 +32,86 @@ const citiesData = [
   'Nellore',
 ];
 
-const SearchCityScreen = ({ navigation }) => {
+const SearchCityScreen = ({ navigation, route }) => {
+  const mobileNo = route?.params?.mobileNo;
+
   const [selectedCity, setSelectedCity] = useState('Chennai');
   const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const filteredCities = citiesData.filter(city =>
     city.toLowerCase().includes(search.toLowerCase())
   );
+
+  const handleConfirmCity = async () => {
+    if (loading) return;
+    setLoading(true);
+
+    try {
+      // ✅ Get token from AsyncStorage, fall back to route param if present
+      let token = await AsyncStorage.getItem('token');
+
+      if (!token && route?.params?.token) {
+        token = route.params.token;
+        await AsyncStorage.setItem('token', token);
+      }
+
+      console.log('🔑 Token from storage:', token);
+      console.log('📍 Selected city:', selectedCity);
+
+      if (!token) {
+        Alert.alert('Session expired', 'Please log in again.');
+        return;
+      }
+
+      const response = await fetch(`${API_URL}/auth/update-city`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ City: selectedCity }),
+      });
+
+      if (!response.ok) {
+        console.log('❌ Server responded with status:', response.status);
+        Alert.alert('Error', `Server error (${response.status}). Please try again.`);
+        return;
+      }
+
+      const result = await response.json();
+      console.log('✅ City update result:', result);
+
+      if (result.success) {
+        // ✅ Cache the selected city locally too, useful for quick reads elsewhere
+        await AsyncStorage.setItem('selectedCity', selectedCity);
+
+        navigation.navigate('selectAdminvehicle', {
+          mobileNo,
+          token,
+        });
+      } else {
+        console.log('❌ City update failed:', result.message);
+        Alert.alert('Failed', result.message || 'Could not update city. Please try again.');
+      }
+
+    } catch (error) {
+      console.log('❌ Error:', error);
+      Alert.alert('Network Error', error.message || 'Something went wrong. Please check your connection.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
 
       {/* BACK BUTTON */}
       <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-            <Image
-            source={require('../assets/back.png')}
-            style={styles.backIcon}
-          />
+        <Image
+          source={require('../assets/back.png')}
+          style={styles.backIcon}
+        />
       </TouchableOpacity>
 
       {/* SEARCH BAR */}
@@ -73,9 +140,9 @@ const SearchCityScreen = ({ navigation }) => {
               onPress={() => setSelectedCity(city)}
             >
               <Image
-                  source={require('../assets/location.png')}
-                  style={styles.loc}
-                  resizeMode='contain'/>
+                source={require('../assets/location.png')}
+                style={styles.loc}
+                resizeMode='contain' />
 
               <Text
                 style={[
@@ -91,9 +158,16 @@ const SearchCityScreen = ({ navigation }) => {
       </ScrollView>
 
       {/* CTA BUTTON */}
-      <TouchableOpacity style={styles.button}
-      onPress={() => navigation.navigate('selectAdminvehicle')}>
-        <Text style={styles.buttonText}>Confirm City</Text>
+      <TouchableOpacity
+        style={[styles.button, loading && styles.buttonDisabled]}
+        onPress={handleConfirmCity}
+        disabled={loading}
+      >
+        {loading ? (
+          <ActivityIndicator color="#FFFFFF" />
+        ) : (
+          <Text style={styles.buttonText}>Confirm City</Text>
+        )}
       </TouchableOpacity>
 
     </SafeAreaView>
@@ -108,17 +182,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#F6F6F6',
     paddingHorizontal: 20,
   },
-  
-  loc:{
-  width:24,
-  height:24,
-},
+
+  loc: {
+    width: 24,
+    height: 24,
+  },
 
   backIcon: {
-  width: 40,
-  height: 40,
-  resizeMode: 'contain',
-},
+    width: 40,
+    height: 40,
+    resizeMode: 'contain',
+  },
 
   /* BACK BUTTON */
   backBtn: {
@@ -188,6 +262,7 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
     borderRadius: 30,
     alignItems: 'center',
+    justifyContent: 'center',
 
     // iOS shadow
     shadowColor: '#000',
@@ -197,6 +272,10 @@ const styles = StyleSheet.create({
 
     // Android
     elevation: 3,
+  },
+
+  buttonDisabled: {
+    opacity: 0.7,
   },
 
   buttonText: {

@@ -54,7 +54,7 @@ const DutyDashboard = ({ navigation }) => {
     if (newState) {
       // ✅ Register as available BEFORE navigating
       await registerCaptainSocket(captainId);
-      navigation.navigate("OnDutyDashboard");
+      //navigation.navigate("OnDutyDashboard");
     } else {
       // ✅ Explicitly mark off-duty so backend stops sending orders
       setCaptainOffDuty(captainId);
