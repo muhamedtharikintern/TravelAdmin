@@ -56,6 +56,7 @@ router.post("/register", async (req, res) => {
 
 
 // ====================== LOGIN ======================
+// ====================== LOGIN ======================
 router.post("/login", async (req, res) => {
   try {
     const { mobileNo } = req.body;
@@ -67,13 +68,21 @@ router.post("/login", async (req, res) => {
     }
 
     let user = await User.findOne({ mobileNo });
-    let isRegistered = true;
 
     if (!user) {
-      // 🆕 New user — create a minimal shell record so we can issue a token
+      // 🆕 Brand new number — create a minimal shell record so we can issue a token
       user = await User.create({ mobileNo });
-      isRegistered = false;
     }
+
+    // ✅ "Registered" = onboarding actually completed, not just "row exists"
+    const isRegistered = Boolean(
+      user.City &&
+      user.vehicleType &&
+      user.drivingLicenceNo &&
+      user.vehicleNo &&
+      user.selfieUrl
+      // add/remove fields here to match whatever you consider "fully onboarded"
+    );
 
     const token = jwt.sign(
       { userId: user._id },
@@ -84,7 +93,7 @@ router.post("/login", async (req, res) => {
     return res.status(200).json({
       success: true,
       isRegistered,
-      message: isRegistered ? "Login Success" : "New user, token issued",
+      message: isRegistered ? "Login Success" : "Onboarding incomplete",
       token,
       user,
     });
