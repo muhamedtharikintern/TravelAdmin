@@ -23,53 +23,69 @@ const EnterOTPScreen = ({ navigation, route }) => {
   const mobileNo = route?.params?.mobileNo;
   const token = route?.params?.token;
 
+  const verifyOTP = async (otpCode) => {
+    if (!confirm) {
+      setError('Session expired. Please go back and try again.');
+      return;
+    }
+    try {
+      setLoading(true);
+      setError('');
 
-const verifyOTP = async (otpCode) => {
-  if (!confirm) {
-    setError('Session expired. Please go back and try again.');
-    return;
-  }
-  try {
-    setLoading(true);
-    setError('');
+      // Step 1: Verify Firebase OTP
+      await confirm.confirm(otpCode);
+      console.log('✅ Firebase OTP verified');
 
-    // Step 1: Verify Firebase OTP
-    await confirm.confirm(otpCode);
-    console.log('✅ Firebase OTP verified');
+      // Step 2: Check mobile no in backend
+      const loginResponse = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mobileNo: mobileNo }),
+      });
 
-    // Step 2: Check mobile no in backend (same logic as AdminIntroScreen checks token)
-    const loginResponse = await fetch(`${API_URL}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mobileNo: mobileNo }),
-    });
+      const loginResult = await loginResponse.json();
+      console.log('📦 Backend response:', JSON.stringify(loginResult));
 
-    const loginResult = await loginResponse.json();
-    console.log('📦 Backend response:', JSON.stringify(loginResult));
+      if (loginResult.success) {
+        // ✅ Check multiple possible field names, then fall back to token passed via route
+        const finalToken =
+          loginResult.token ??
+          loginResult.authToken ??
+          loginResult.accessToken ??
+          loginResult?.data?.token ??
+          token ??
+          null;
 
-  if (loginResult.success) {
-  if (loginResult.isRegistered === true) {
-    await AsyncStorage.setItem('token', loginResult.token);
-    navigation.replace('DutyDashboard');   // ✅ replace not navigate
-  } else {
-    navigation.replace('Whichcity', {      // ✅ replace not navigate
-      mobileNo,
-      token: loginResult.token ?? token,
-    });
-  }
-} else {
-  Alert.alert('Error', loginResult.message || 'Login failed.');
-}
+        console.log('🔍 Resolved final token:', finalToken);
 
-  } catch (err) {
-    console.log('❌ OTP Error:', err);
-    setError('Invalid OTP. Please try again.');
-    setOtp(['', '', '', '', '', '']);
-    inputs.current[0]?.focus();
-  } finally {
-    setLoading(false);
-  }
-};
+        if (finalToken) {
+          await AsyncStorage.setItem('token', finalToken);
+          console.log('💾 Token saved to AsyncStorage:', finalToken);
+        } else {
+          console.log('⚠️ Still no token available — backend is not returning one at all.');
+        }
+
+        if (loginResult.isRegistered === true) {
+          navigation.replace('DutyDashboard');
+        } else {
+          navigation.replace('Whichcity', {
+            mobileNo,
+            token: finalToken,
+          });
+        }
+      } else {
+        Alert.alert('Error', loginResult.message || 'Login failed.');
+      }
+
+    } catch (err) {
+      console.log('❌ OTP Error:', err);
+      setError('Invalid OTP. Please try again.');
+      setOtp(['', '', '', '', '', '']);
+      inputs.current[0]?.focus();
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleChange = (text, index) => {
     if (text.length > 1) return;

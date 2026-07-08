@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Image,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -13,18 +15,31 @@ const API_URL = "https://traveladmin.duckdns.org";
 
 const WhichCityScreen = ({ navigation, route }) => {
   const mobileNo = route?.params?.mobileNo;
+  const routeToken = route?.params?.token;
+  const [loading, setLoading] = useState(false);
 
   const handleConfirmCity = async () => {
+    if (loading) return;
+
+    setLoading(true);
     try {
       const selectedCity = "Chennai";
 
-      // ✅ Always get token from AsyncStorage
-      const token = await AsyncStorage.getItem('token');
+      // ✅ Prefer AsyncStorage, fall back to the token passed via navigation
+      let token = await AsyncStorage.getItem('token');
       console.log('🔑 Token from storage:', token);
+
+      if (!token && routeToken) {
+        console.log('↩️ Falling back to token from route params:', routeToken);
+        token = routeToken;
+        await AsyncStorage.setItem('token', token); // persist it for next time
+      }
+
       console.log('📞 mobileNo:', mobileNo);
 
       if (!token) {
-        console.log('❌ No token found in storage');
+        console.log('❌ No token found in storage or route params');
+        Alert.alert('Session expired', 'Please log in again.');
         return;
       }
 
@@ -37,6 +52,12 @@ const WhichCityScreen = ({ navigation, route }) => {
         body: JSON.stringify({ City: selectedCity }),
       });
 
+      if (!response.ok) {
+        console.log('❌ Server responded with status:', response.status);
+        Alert.alert('Error', `Server error (${response.status}). Please try again.`);
+        return;
+      }
+
       const result = await response.json();
       console.log("✅ City update result:", result);
 
@@ -47,10 +68,14 @@ const WhichCityScreen = ({ navigation, route }) => {
         });
       } else {
         console.log('❌ City update failed:', result.message);
+        Alert.alert('Failed', result.message || 'Could not update city. Please try again.');
       }
 
     } catch (error) {
       console.log('❌ Error:', error);
+      Alert.alert('Network Error', error.message || 'Something went wrong. Please check your connection.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -93,15 +118,23 @@ const WhichCityScreen = ({ navigation, route }) => {
             <Text style={styles.cityText}>Chennai</Text>
           </View>
 
-          <TouchableOpacity onPress={() => navigation.navigate('searchcity',{ mobileNo})}>
+          <TouchableOpacity onPress={() => navigation.navigate('searchcity', { mobileNo })}>
             <Text style={styles.changeText}>CHANGE</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       {/* CTA BUTTON */}
-      <TouchableOpacity style={styles.button} onPress={handleConfirmCity}>
-        <Text style={styles.buttonText}>Confirm City</Text>
+      <TouchableOpacity
+        style={[styles.button, loading && styles.buttonDisabled]}
+        onPress={handleConfirmCity}
+        disabled={loading}
+      >
+        {loading ? (
+          <ActivityIndicator color="#FFFFFF" />
+        ) : (
+          <Text style={styles.buttonText}>Confirm City</Text>
+        )}
       </TouchableOpacity>
 
     </SafeAreaView>
@@ -193,11 +226,15 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
     borderRadius: 30,
     alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },
     elevation: 3,
+  },
+  buttonDisabled: {
+    opacity: 0.7,
   },
   buttonText: {
     color: '#FFFFFF',

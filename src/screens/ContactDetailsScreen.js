@@ -46,10 +46,21 @@ const ContactDetailsScreen = ({ navigation }) => {
       console.log('LOGIN DATA:', loginData);
       console.log('isRegistered:', loginData.isRegistered);
 
-      // ✅ Only save token if it actually exists (not null)
-      if (loginData.success && loginData.token) {
-        await AsyncStorage.setItem('token', loginData.token);
-        console.log('LOGIN TOKEN SAVED:', loginData.token);
+      // ✅ Check multiple possible field names in case backend uses a different key
+      const receivedToken =
+        loginData.token ??
+        loginData.authToken ??
+        loginData.accessToken ??
+        loginData?.data?.token ??
+        null;
+
+      console.log('🔍 Resolved token from login response:', receivedToken);
+
+      if (loginData.success && receivedToken) {
+        await AsyncStorage.setItem('token', receivedToken);
+        console.log('LOGIN TOKEN SAVED:', receivedToken);
+      } else {
+        console.log('⚠️ No token in login response — backend may not issue one for unregistered numbers yet.');
       }
 
       // Step 2: Send OTP via Firebase (for both new and existing users)
@@ -60,7 +71,7 @@ const ContactDetailsScreen = ({ navigation }) => {
       navigation.navigate('EnterOTP', {
         confirm: confirmation,
         mobileNo,
-        token: loginData.token ?? null,
+        token: receivedToken,
       });
 
     } catch (error) {
